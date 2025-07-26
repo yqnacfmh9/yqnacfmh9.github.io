@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>詞群閱讀訓練器1.0.4</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    #controls {
+      margin-bottom: 20px;
+    }
+    select, input, button {
+      font-size: 1rem;
+      margin: 0 8px;
+    }
+    #wordDisplay {
+      display: inline-block;
+      text-align: center;
+    }
+    .word-line {
+      font-size: 3rem;
+      margin: 0.5em 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>詞群閱讀訓練器</h1>
+
+  <div id="controls">
+    <label>
+      詞語長度：
+      <select id="lengthSelect">
+        <option value="2">2 字詞</option>
+        <option value="3">3 字詞</option>
+        <option value="4">4 字詞</option>
+        <option value="5">5 字詞</option>
+        <option value="6">6 字詞</option>
+        <option value="7">7 字詞</option>
+      </select>
+    </label>
+
+    <label>
+      顯示行數：
+      <input type="number" id="linesInput" value="3" min="1" max="10" />
+    </label>
+
+    <label>
+      更換頻率（秒）：
+      <input type="number" id="intervalInput" value="2" step="0.1" min="0.1" />
+    </label>
+
+    <button id="startBtn">開始</button>
+    <button id="stopBtn">停止</button>
+  </div>
+
+  <div id="wordDisplay">準備中…</div>
+
+  <script>
+    let wordLists = {};
+    let timerId = null;
+
+    window.addEventListener("load", () => {
+      fetch("words.json")
+      .then(response => response.json())
+      .then(data => {
+
+        wordLists = data;
+        document.getElementById("wordDisplay").textContent = "準備好開始囉！";
+      })
+      .catch(error => {
+        console.error("載入詞語資料失敗：", error);
+        document.getElementById("wordDisplay").textContent = "載入失敗，請稍後再試。";
+      });
+    });
+
+    // 從指定長度陣列中隨機取一詞
+    function getRandomWord(len) {
+      const list = wordLists[len];
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    // 更新多行詞群顯示
+    function updateDisplay(len, lines) {
+      const list = [...wordLists[len]]; // 複製陣列，避免影響原資料
+
+      if (lines > list.length) {
+        document.getElementById("wordDisplay").innerHTML = `<div class="word-line">詞語數量不足</div>`;
+        return;
+      }
+
+      // 打亂順序（Fisher-Yates shuffle）
+      for (let i = list.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+
+      // 取前 lines 筆資料
+      const selected = list.slice(0, lines);
+
+      let html = '';
+      selected.forEach(word => {
+        html += `<div class="word-line">${word}</div>`;
+      });
+
+      document.getElementById("wordDisplay").innerHTML = html;
+    }
+
+
+    // 開始自動更換
+    function startTraining() {
+      const len = parseInt(document.getElementById("lengthSelect").value, 10);
+      const lines = parseInt(document.getElementById("linesInput").value, 10);
+      const intervalSec = parseFloat(document.getElementById("intervalInput").value);
+
+      if (timerId) clearInterval(timerId);
+      updateDisplay(len, lines);
+
+      timerId = setInterval(() => {
+        updateDisplay(len, lines);
+      }, intervalSec * 1000);
+    }
+
+    // 停止自動更換
+    function stopTraining() {
+      clearInterval(timerId);
+    }
+
+    document.getElementById("startBtn")
+      .addEventListener("click", startTraining);
+    document.getElementById("stopBtn")
+      .addEventListener("click", stopTraining);
+  </script>
+</body>
+</html>
