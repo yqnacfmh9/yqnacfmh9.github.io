@@ -2,138 +2,164 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>詞群閱讀訓練器1.0.4</title>
+  <title>整合系統1.0.0</title>
   <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      text-align: center;
-      background-color:red
-    }
-    #controls {
-      margin-bottom: 20px;
-    }
-    select, input, button {
-      font-size: 1rem;
-      margin: 0 8px;
-    }
-    #wordDisplay {
-      display: inline-block;
-      text-align: center;
-      color:black;
-    }
-    .word-line {
-      font-size: 3rem;
-      margin: 0.5em 0;
-    }
+
   </style>
 </head>
 <body>
-  <h1>詞群閱讀訓練器</h1>
-
-  <div id="controls">
-    <label>
-      詞語長度：
-      <select id="lengthSelect">
-        <option value="2">2 字詞</option>
-        <option value="3">3 字詞</option>
-        <option value="4">4 字詞</option>
-        <option value="5">5 字詞</option>
-        <option value="6">6 字詞</option>
-        <option value="7">7 字詞</option>
-      </select>
-    </label>
-
-    <label>
-      顯示行數：
-      <input type="number" id="linesInput" value="3" min="1" max="10" />
-    </label>
-
-    <label>
-      更換頻率（秒）：
-      <input type="number" id="intervalInput" value="2" step="0.1" min="0.1" />
-    </label>
-
-    <button id="startBtn">開始</button>
-    <button id="stopBtn">停止</button>
-  </div>
-
-  <div id="wordDisplay">準備中…</div>
-
+  <button onclick="ReadingTraining()">詞群閱讀訓練</button>
+  <button onclick="ShowNotion()">notion</button>
   <script>
-    let wordLists = {};
-    let timerId = null;
-
-    window.addEventListener("load", () => {
-      fetch("words.json")
-      .then(response => response.json())
-      .then(data => {
-
-        wordLists = data;
-        document.getElementById("wordDisplay").textContent = "準備好開始囉！";
-      })
-      .catch(error => {
-        console.error("載入詞語資料失敗：", error);
-        document.getElementById("wordDisplay").textContent = "載入失敗，請稍後再試。";
-      });
-    });
-
-    // 從指定長度陣列中隨機取一詞
-    function getRandomWord(len) {
-      const list = wordLists[len];
-      return list[Math.floor(Math.random() * list.length)];
+    // 動態 CSS 設定
+    function setStyle(obj, propertyObject) {
+      for (let property in propertyObject) {
+        document.querySelector(obj).style[property] = propertyObject[property];
+      }
     }
+    setStyle("body", {textAlign: "center"});
 
-    // 更新多行詞群顯示
-    function updateDisplay(len, lines) {
-      const list = [...wordLists[len]]; // 複製陣列，避免影響原資料
-
-      if (lines > list.length) {
-        document.getElementById("wordDisplay").innerHTML = `<div class="word-line">詞語數量不足</div>`;
-        return;
+    function ReadingTraining() {
+      if (document.querySelector('iframe')) {
+          document.querySelector('iframe').remove();
       }
+      const title = document.createElement("h1");
+      title.textContent = "詞群閱讀訓練器";
+      document.body.appendChild(title);
 
-      // 打亂順序（Fisher-Yates shuffle）
-      for (let i = list.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [list[i], list[j]] = [list[j], list[i]];
-      }
+      const controlsDiv = document.createElement("div");
+      controlsDiv.id = "controls";
+      document.body.appendChild(controlsDiv);
 
-      // 取前 lines 筆資料
-      const selected = list.slice(0, lines);
+      const resultDiv = document.createElement("div");
+      resultDiv.id = "result";
+      resultDiv.textContent = "準備中…";
+      document.body.appendChild(resultDiv);
 
-      let html = '';
-      selected.forEach(word => {
-        html += `<div class="word-line">${word}</div>`;
+      // 設定樣式
+      setStyle("body", {
+        fontFamily: "sans-serif",
+        padding: "20px"
       });
 
-      document.getElementById("wordDisplay").innerHTML = html;
-    }
+      setStyle("#controls", {
+        marginBottom: "20px"
+      });
 
+      setStyle("#result", {
+        display: "inline-block",
+        textAlign: "center"
+      });
 
-    // 開始自動更換
-    function startTraining() {
-      const len = parseInt(document.getElementById("lengthSelect").value, 10);
-      const lines = parseInt(document.getElementById("linesInput").value, 10);
-      const intervalSec = parseFloat(document.getElementById("intervalInput").value);
+      // 建立控制元件
+      function createControls() {
+        const select = document.createElement("select");
+        select.id = "lengthSelect";
+        [2,3,4,5,6,7].forEach(n => {
+          const opt = document.createElement("option");
+          opt.value = n;
+          opt.textContent = `${n} 字詞`;
+          select.appendChild(opt);
+        });
 
-      if (timerId) clearInterval(timerId);
-      updateDisplay(len, lines);
+        const linesInput = document.createElement("input");
+        linesInput.type = "number";
+        linesInput.id = "linesInput";
+        linesInput.value = "3";
+        linesInput.min = "1";
+        linesInput.max = "10";
 
-      timerId = setInterval(() => {
+        const intervalInput = document.createElement("input");
+        intervalInput.type = "number";
+        intervalInput.id = "intervalInput";
+        intervalInput.value = "2";
+        intervalInput.step = "0.1";
+        intervalInput.min = "0.1";
+
+        const startBtn = document.createElement("button");
+        startBtn.id = "startBtn";
+        startBtn.textContent = "開始";
+
+        const stopBtn = document.createElement("button");
+        stopBtn.id = "stopBtn";
+        stopBtn.textContent = "停止";
+
+        controlsDiv.append("詞語長度：", select, "顯示行數：", linesInput, "更換頻率（秒）：", intervalInput, startBtn, stopBtn);
+      }
+
+      createControls();
+
+      // 顯示樣式設定
+      setStyle("select", { fontSize: "1rem", margin: "0 8px" });
+      setStyle("input", { fontSize: "1rem", margin: "0 8px" });
+      setStyle("button", { fontSize: "1rem", margin: "0 8px" });
+
+      // 資料載入與功能邏輯
+      let wordLists = {};
+      let timerId = null;
+
+      fetch("https://raw.githubusercontent.com/yqnacfmh9/yqnacfmh9.github.io/refs/heads/main/words.json")
+        .then(response => response.json())
+        .then(data => {
+          wordLists = data;
+          resultDiv.textContent = "準備好開始囉！";
+        })
+        .catch(error => {
+          console.error("載入失敗：", error);
+          resultDiv.textContent = "載入失敗，請稍後再試。";
+        });
+
+      function updateDisplay(len, lines) {
+        const list = [...wordLists[len]];
+        if (lines > list.length) {
+          resultDiv.innerHTML = `<div style="font-size:3rem">詞語數量不足</div>`;
+          return;
+        }
+        for (let i = list.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [list[i], list[j]] = [list[j], list[i]];
+        }
+        const selected = list.slice(0, lines);
+        resultDiv.innerHTML = selected.map(word => `<div style="font-size:3rem; margin:0.5em 0">${word}</div>`).join("");
+      }
+
+      function startTraining() {
+        const len = parseInt(document.getElementById("lengthSelect").value);
+        const lines = parseInt(document.getElementById("linesInput").value);
+        const interval = parseFloat(document.getElementById("intervalInput").value);
+        clearInterval(timerId);
         updateDisplay(len, lines);
-      }, intervalSec * 1000);
+        timerId = setInterval(() => updateDisplay(len, lines), interval * 1000);
+      }
+
+      function stopTraining() {
+        clearInterval(timerId);
+      }
+
+      document.getElementById("startBtn").addEventListener("click", startTraining);
+      document.getElementById("stopBtn").addEventListener("click", stopTraining);
+
     }
 
-    // 停止自動更換
-    function stopTraining() {
-      clearInterval(timerId);
+    function ShowNotion() {
+      // 保留按鈕，移除其它元素
+      [...document.body.children].forEach(el => {
+        if (el.tagName !== 'BUTTON') {
+          el.remove();
+        }
+      });
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://enormous-shaker-cb9.notion.site/ebd/e9ec230ce6f347589218cdd46cfe1267?v=b0ba7af0d3994da1b8a72e8a791d8038'
+      document.body.appendChild(iframe);
+      setStyle('iframe', {
+        display: 'block',
+        marginTop: '20px',
+        width: '100%',
+        height: '100vh',
+        border: 'none'
+      });
     }
-
-    document.getElementById("startBtn")
-      .addEventListener("click", startTraining);
-    document.getElementById("stopBtn")
-      .addEventListener("click", stopTraining);
+    
   </script>
 </body>
 </html>
