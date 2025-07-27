@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>整合系統1.1.1</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      padding: 20px;
+      background-color: red;
+    }
+    #buttonGroup {
+      margin-bottom: 20px;
+    }
+    button {
+      font-size: 1rem;
+      margin: 0 8px;
+    }
+    select, input {
+      font-size: 1rem;
+      margin: 0 8px;
+    }
+    #result {
+      display: inline-block;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="buttonGroup">
+    <button onclick="ReadingTraining()">詞群閱讀訓練</button>
+    <button onclick="visionTraining()">蓋博符號視力訓練</button>
+    <button onclick="ShowNotion()">notion</button>
+  </div>
+
+  <script>
+    function setStyle(obj, propertyObject) {
+      for (let property in propertyObject) {
+        document.querySelector(obj).style[property] = propertyObject[property];
+      }
+    }
+
+    function ReadingTraining() {
+      if (document.querySelector('iframe')) {
+        document.querySelector('iframe').remove();
+      }
+
+      [...document.body.children].forEach(el => {
+        if (el.id !== 'buttonGroup') el.remove();
+      });
+
+      const title = document.createElement("h1");
+      title.textContent = "詞群閱讀訓練器";
+      document.body.appendChild(title);
+
+      const controlsDiv = document.createElement("div");
+      controlsDiv.id = "controls";
+      document.body.appendChild(controlsDiv);
+
+      const resultDiv = document.createElement("div");
+      resultDiv.id = "result";
+      resultDiv.textContent = "準備中…";
+      document.body.appendChild(resultDiv);
+
+      function createControls() {
+        const select = document.createElement("select");
+        select.id = "lengthSelect";
+        [2,3,4,5,6,7].forEach(n => {
+          const opt = document.createElement("option");
+          opt.value = n;
+          opt.textContent = `${n} 字詞`;
+          select.appendChild(opt);
+        });
+
+        const linesInput = document.createElement("input");
+        linesInput.type = "number";
+        linesInput.id = "linesInput";
+        linesInput.value = "3";
+        linesInput.min = "1";
+        linesInput.max = "10";
+
+        const intervalInput = document.createElement("input");
+        intervalInput.type = "number";
+        intervalInput.id = "intervalInput";
+        intervalInput.value = "2";
+        intervalInput.step = "0.1";
+        intervalInput.min = "0.1";
+
+        const startBtn = document.createElement("button");
+        startBtn.id = "startBtn";
+        startBtn.textContent = "開始";
+
+        const stopBtn = document.createElement("button");
+        stopBtn.id = "stopBtn";
+        stopBtn.textContent = "停止";
+
+        controlsDiv.append("詞語長度：", select, "顯示行數：", linesInput, "更換頻率（秒）：", intervalInput, startBtn, stopBtn);
+      }
+
+      createControls();
+
+      let wordLists = {};
+      let timerId = null;
+
+      fetch("https://raw.githubusercontent.com/yqnacfmh9/yqnacfmh9.github.io/refs/heads/main/words.json")
+        .then(response => response.json())
+        .then(data => {
+          wordLists = data;
+          resultDiv.textContent = "準備好開始囉！";
+        })
+        .catch(error => {
+          console.error("載入失敗：", error);
+          resultDiv.textContent = "載入失敗，請稍後再試。";
+        });
+
+      function updateDisplay(len, lines) {
+        const list = [...wordLists[len]];
+        if (lines > list.length) {
+          resultDiv.innerHTML = `<div style="font-size:3rem">詞語數量不足</div>`;
+          return;
+        }
+        for (let i = list.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [list[i], list[j]] = [list[j], list[i]];
+        }
+        const selected = list.slice(0, lines);
+        resultDiv.innerHTML = selected.map(word => `<div style="font-size:3rem; margin:0.5em 0">${word}</div>`).join("");
+      }
+
+      function startTraining() {
+        const len = parseInt(document.getElementById("lengthSelect").value);
+        const lines = parseInt(document.getElementById("linesInput").value);
+        const interval = parseFloat(document.getElementById("intervalInput").value);
+        clearInterval(timerId);
+        updateDisplay(len, lines);
+        timerId = setInterval(() => updateDisplay(len, lines), interval * 1000);
+      }
+
+      function stopTraining() {
+        clearInterval(timerId);
+      }
+
+      document.getElementById("startBtn").addEventListener("click", startTraining);
+      document.getElementById("stopBtn").addEventListener("click", stopTraining);
+    }
+
+    function ShowNotion() {
+      [...document.body.children].forEach(el => {
+        if (el.id !== 'buttonGroup') el.remove();
+      });
+
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://enormous-shaker-cb9.notion.site/ebd/e9ec230ce6f347589218cdd46cfe1267?v=b0ba7af0d3994da1b8a72e8a791d8038';
+      document.body.appendChild(iframe);
+      setStyle('iframe', {
+        display: 'block',
+        marginTop: '20px',
+        width: '100%',
+        height: '100vh',
+        border: 'none'
+      });
+    }
+
+    function visionTraining() {
+      [...document.body.children].forEach(el => {
+        if (el.id !== 'buttonGroup') el.remove();
+      });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 700;
+      canvas.height = 700;
+      canvas.style.border = "1px solid black";
+      canvas.style.marginTop = "10px";
+
+      const reference = document.getElementById("buttonGroup");
+      reference.insertAdjacentElement("afterend", canvas);
+
+      const ctx = canvas.getContext("2d");
+
+      function generateGabor() {
+        const size = canvas.width;
+        const frequency = Math.random() * 0.1 + 0.05;
+        const contrast = Math.random() * 0.5 + 0.5;
+        const orientation = Math.random() * Math.PI;
+        const scale = Math.random() * 0.75 + 0.15;
+        const offsetX = Math.random() * (size * 0.4) - (size * 0.2);
+        const offsetY = Math.random() * (size * 0.4) - (size * 0.2);
+
+        ctx.clearRect(0, 0, size, size);
+        ctx.save();
+        ctx.translate(size / 2 + offsetX, size / 2 + offsetY);
+        ctx.scale(scale, scale);
+        ctx.translate(-size / 2, -size / 2);
+
+        for (let x = 0; x < size; x++) {
+          for (let y = 0; y < size; y++) {
+            let x0 = x - size / 2;
+            let y0 = y - size / 2;
+            let theta = x0 * Math.cos(orientation) + y0 * Math.sin(orientation);
+            let gaborValue = Math.cos(2 * Math.PI * frequency * theta) * contrast;
+            let gray = Math.floor((gaborValue + 1) * 127.5);
+            ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+        ctx.restore();
+      }
+
+      let timeoutId;
+
+      function scheduleNext() {
+        generateGabor();
+        const randomMs = Math.floor(Math.random() * 4000) + 1000; // 1~5秒
+        timeoutId = setTimeout(scheduleNext, randomMs);
+      }
+
+      clearTimeout(timeoutId);
+      scheduleNext();
+    }
+  </script>
+</body>
+</html>
