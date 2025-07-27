@@ -2,28 +2,54 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>整合系統1.1.0</title>
+  <title>整合系統1.1.1</title>
   <style>
-
+    body {
+      text-align: center;
+      font-family: sans-serif;
+      padding: 20px;
+      background-color: red;
+    }
+    #buttonGroup {
+      margin-bottom: 20px;
+    }
+    button {
+      font-size: 1rem;
+      margin: 0 8px;
+    }
+    select, input {
+      font-size: 1rem;
+      margin: 0 8px;
+    }
+    #result {
+      display: inline-block;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <button onclick="ReadingTraining()">詞群閱讀訓練</button>
-  <button onclick="fetchUbikeData()">YouBike</button>
-  <button onclick="ShowNotion()">notion</button>
+  <div id="buttonGroup">
+    <button onclick="ReadingTraining()">詞群閱讀訓練</button>
+    <button onclick="visionTraining()">蓋博符號視力訓練</button>
+    <button onclick="ShowNotion()">notion</button>
+  </div>
+
   <script>
-    // 動態 CSS 設定
     function setStyle(obj, propertyObject) {
       for (let property in propertyObject) {
         document.querySelector(obj).style[property] = propertyObject[property];
       }
     }
-    setStyle("body", {textAlign: "center"});
 
     function ReadingTraining() {
       if (document.querySelector('iframe')) {
-          document.querySelector('iframe').remove();
+        document.querySelector('iframe').remove();
       }
+
+      [...document.body.children].forEach(el => {
+        if (el.id !== 'buttonGroup') el.remove();
+      });
+
       const title = document.createElement("h1");
       title.textContent = "詞群閱讀訓練器";
       document.body.appendChild(title);
@@ -37,22 +63,6 @@
       resultDiv.textContent = "準備中…";
       document.body.appendChild(resultDiv);
 
-      // 設定樣式
-      setStyle("body", {
-        fontFamily: "sans-serif",
-        padding: "20px"
-      });
-
-      setStyle("#controls", {
-        marginBottom: "20px"
-      });
-
-      setStyle("#result", {
-        display: "inline-block",
-        textAlign: "center"
-      });
-
-      // 建立控制元件
       function createControls() {
         const select = document.createElement("select");
         select.id = "lengthSelect";
@@ -90,12 +100,6 @@
 
       createControls();
 
-      // 顯示樣式設定
-      setStyle("select", { fontSize: "1rem", margin: "0 8px" });
-      setStyle("input", { fontSize: "1rem", margin: "0 8px" });
-      setStyle("button", { fontSize: "1rem", margin: "0 8px" });
-
-      // 資料載入與功能邏輯
       let wordLists = {};
       let timerId = null;
 
@@ -139,18 +143,15 @@
 
       document.getElementById("startBtn").addEventListener("click", startTraining);
       document.getElementById("stopBtn").addEventListener("click", stopTraining);
-
     }
 
     function ShowNotion() {
-      // 保留按鈕，移除其它元素
       [...document.body.children].forEach(el => {
-        if (el.tagName !== 'BUTTON') {
-          el.remove();
-        }
+        if (el.id !== 'buttonGroup') el.remove();
       });
+
       const iframe = document.createElement('iframe');
-      iframe.src = 'https://enormous-shaker-cb9.notion.site/ebd/e9ec230ce6f347589218cdd46cfe1267?v=b0ba7af0d3994da1b8a72e8a791d8038'
+      iframe.src = 'https://enormous-shaker-cb9.notion.site/ebd/e9ec230ce6f347589218cdd46cfe1267?v=b0ba7af0d3994da1b8a72e8a791d8038';
       document.body.appendChild(iframe);
       setStyle('iframe', {
         display: 'block',
@@ -161,29 +162,62 @@
       });
     }
 
-    async function fetchUbikeData() {
+    function visionTraining() {
       [...document.body.children].forEach(el => {
-        if (el.tagName !== 'BUTTON') {
-          el.remove();
-        }
+        if (el.id !== 'buttonGroup') el.remove();
       });
-      const url = 'https://data.ntpc.gov.tw/api/datasets/010e5b15-3823-4b20-b401-b1cf000550c5/json?page=1&size=50';
-      const response = await fetch(url);
-      const data = await response.json();
 
-      const targets = ['YouBike2.0_集成成功路口', 'YouBike2.0_中正北路193巷(愛買三重店)'];
-      const ubikeDiv = document.createElement("div");
-      ubikeDiv.id = "ubikeInfo";
-      document.body.appendChild(ubikeDiv);
+      const canvas = document.createElement("canvas");
+      canvas.width = 700;
+      canvas.height = 700;
+      canvas.style.border = "1px solid black";
+      canvas.style.marginTop = "10px";
 
-      data.forEach(site => {
-        if (targets.includes(site.sna)) {
-          ubikeDiv.innerHTML += `<p><strong>${site.sna}</strong><br>總數：${site.tot}  可借：${site.sbi}</p>`;
+      const reference = document.getElementById("buttonGroup");
+      reference.insertAdjacentElement("afterend", canvas);
+
+      const ctx = canvas.getContext("2d");
+
+      function generateGabor() {
+        const size = canvas.width;
+        const frequency = Math.random() * 0.1 + 0.05;
+        const contrast = Math.random() * 0.5 + 0.5;
+        const orientation = Math.random() * Math.PI;
+        const scale = Math.random() * 0.75 + 0.15;
+        const offsetX = Math.random() * (size * 0.4) - (size * 0.2);
+        const offsetY = Math.random() * (size * 0.4) - (size * 0.2);
+
+        ctx.clearRect(0, 0, size, size);
+        ctx.save();
+        ctx.translate(size / 2 + offsetX, size / 2 + offsetY);
+        ctx.scale(scale, scale);
+        ctx.translate(-size / 2, -size / 2);
+
+        for (let x = 0; x < size; x++) {
+          for (let y = 0; y < size; y++) {
+            let x0 = x - size / 2;
+            let y0 = y - size / 2;
+            let theta = x0 * Math.cos(orientation) + y0 * Math.sin(orientation);
+            let gaborValue = Math.cos(2 * Math.PI * frequency * theta) * contrast;
+            let gray = Math.floor((gaborValue + 1) * 127.5);
+            ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+            ctx.fillRect(x, y, 1, 1);
+          }
         }
-      });
+        ctx.restore();
+      }
+
+      let timeoutId;
+
+      function scheduleNext() {
+        generateGabor();
+        const randomMs = Math.floor(Math.random() * 4000) + 1000; // 1~5秒
+        timeoutId = setTimeout(scheduleNext, randomMs);
+      }
+
+      clearTimeout(timeoutId);
+      scheduleNext();
     }
-
-    
   </script>
 </body>
 </html>
