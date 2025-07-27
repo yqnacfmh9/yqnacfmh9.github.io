@@ -566,8 +566,8 @@
       for (let t of tasks) {
         if (x>=t.x && x<=t.x+220 && y>=t.y && y<=t.y+80) {
           selectedTaskId = t.id;
-          dragOffset.x = x - t.x;
-          dragOffset.y = y - t.y;
+          dragOffset.x = x;
+          dragOffset.y = y;
           draggingTask = t;
           return;
         }
