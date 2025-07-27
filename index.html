@@ -2,13 +2,14 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>整合系統1.0.0</title>
+  <title>整合系統1.1.0</title>
   <style>
 
   </style>
 </head>
 <body>
   <button onclick="ReadingTraining()">詞群閱讀訓練</button>
+  <button onclick="fetchUbikeData()">YouBike</button>
   <button onclick="ShowNotion()">notion</button>
   <script>
     // 動態 CSS 設定
@@ -159,6 +160,29 @@
         border: 'none'
       });
     }
+
+    async function fetchUbikeData() {
+      [...document.body.children].forEach(el => {
+        if (el.tagName !== 'BUTTON') {
+          el.remove();
+        }
+      });
+      const url = 'https://data.ntpc.gov.tw/api/datasets/010e5b15-3823-4b20-b401-b1cf000550c5/json?page=1&size=50';
+      const response = await fetch(url);
+      const data = await response.json();
+
+      const targets = ['YouBike2.0_集成成功路口', 'YouBike2.0_中正北路193巷(愛買三重店)'];
+      const ubikeDiv = document.createElement("div");
+      ubikeDiv.id = "ubikeInfo";
+      document.body.appendChild(ubikeDiv);
+
+      data.forEach(site => {
+        if (targets.includes(site.sna)) {
+          ubikeDiv.innerHTML += `<p><strong>${site.sna}</strong><br>總數：${site.tot}  可借：${site.sbi}</p>`;
+        }
+      });
+    }
+
     
   </script>
 </body>
