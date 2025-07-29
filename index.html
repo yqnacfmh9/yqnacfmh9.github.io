@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>物理引擎 x 任務系統 v1.6.5</title>
+  <title>物理引擎 x 任務系統 v1.7.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin: 0; overflow: hidden; background: #eef; }
@@ -118,6 +118,7 @@
     const RENDER_SCALE = 4.5;
     const ENTITY_SCALE = 0.5;
 
+
     // 相機
     let camera = { x: 0, y: 0 };
 
@@ -143,6 +144,51 @@
     ).map(o => ({
       x: o.x, y: o.y, width: o.width, height: o.height
     }));
+
+    // 讀取 interactive 物件層並標上 id
+    const interactiveLayer = mapData.layers
+      .find(l => l.type === "objectgroup" && l.name === "interactive");
+
+    const interactiveZones = (interactiveLayer?.objects || []).map(o => ({
+      id:      o.id,             // Tiled 物件原生 id
+      x:       o.x,
+      y:       o.y,            
+      width:   o.width,
+      height:  o.height
+    }));
+
+    // 儲存各互動區回呼
+    const interactionHandlers = {};
+
+    // 註冊函式：triggerInteraction(區域編號, 回呼函式)
+    function triggerInteraction(zoneId, callback) {
+      interactionHandlers[zoneId] = callback;
+    }
+
+    triggerInteraction(12, () => {
+      if (editor.style.display === "flex") return;
+        boardVisible = !boardVisible;
+        const overlay = document.getElementById("taskOverlays");
+        if (boardVisible) drawBoard();
+      else {
+        overlay.innerHTML = "";
+        main_loop(lastTime);
+      }
+    });
+
+    triggerInteraction(23, () => {
+      if (user.onGround) user.gravity = -12;
+    });
+
+    // --- 按鍵監聽：J 鍵觸發互動 ---
+    let jPressed = false;
+    addEventListener("keydown", e => {
+      if (e.code === "KeyJ") jPressed = true;
+    });
+    addEventListener("keyup", e => {
+      if (e.code === "KeyJ") jPressed = false;
+    });
+
 
     // clamp 工具
     function clamp(v, min, max) {
@@ -646,6 +692,38 @@
       buffer.imageSmoothingEnabled = false;
     }
 
+      // 互動區域偵測
+    function checkInteractions(scale = 1){
+      for(let zone of interactiveZones){
+        const sw=user.width*scale, sh=user.height*scale;
+        const overlap=
+          user.x+sw>zone.x&&user.x<zone.x+zone.width&&
+          user.y+sh>zone.y&&user.y<zone.y+zone.height;
+        if(!overlap) continue;
+        if(debugCollision){
+          buffer.save();
+          buffer.strokeStyle='green'; buffer.lineWidth=2;
+          buffer.strokeRect(
+            zone.x*RENDER_SCALE-camera.x,
+            zone.y*RENDER_SCALE-camera.y,
+            zone.width*RENDER_SCALE,
+            zone.height*RENDER_SCALE
+          );
+          buffer.fillStyle='green'; buffer.font='16px sans-serif';
+          buffer.fillText(
+            zone.id,
+            zone.x*RENDER_SCALE-camera.x+4,
+            zone.y*RENDER_SCALE-camera.y+16
+          );
+          buffer.restore();
+        }
+        if(jPressed && interactionHandlers[zone.id]){
+          interactionHandlers[zone.id]();
+          jPressed=false;
+        }
+      }
+    }
+
     // --- 主迴圈與啟動 ---
     let lastTime = performance.now();
     function main_loop(timestamp) {
@@ -689,6 +767,7 @@
       npc.drawSprite(ENTITY_SCALE);
 
       buffer.restore();
+      checkInteractions(ENTITY_SCALE);
     }
 
     // 啟動
