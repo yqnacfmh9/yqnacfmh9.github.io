@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>個案資料輸入與匯出 v0.1.8</title>
+  <!-- 表單樣式 -->
+  <style id="formStyles">
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f2f5;
+    }
+    input,textarea,select,option{
+      font-size: 24px;
+    }
+    form#caseForm {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background: #357ab8;
+    }
+    .form-section {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .form-section h2 {
+      margin: 0 0 8px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #4a90e2;
+      font-size: 28px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      column-gap: 16px;
+      row-gap: 12px;
+      align-items: center;
+    }
+    .form-grid textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 16px;
+      row-gap: 12px;
+    }
+    .contacts .contact {
+      margin-bottom: 12px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      position: relative;
+    }
+    .contacts .contact .remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+    }
+    #familyTreePreview {
+      max-width: 100%;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #downloadBtn {
+      display: block;
+      margin: 20px auto 0;
+    }
+  </style>
+
+  <!-- 匯出頁面樣式 -->
+  <style id="exportStyles">
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-size: 24px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .page {
+      width: 1000px;
+      min-height: 1120px;
+      margin: 20px auto;
+      padding: 40px;
+      box-sizing: border-box;
+      background: #fff;
+      page-break-after: always;
+    }
+    .section-block {
+      margin-top: 24px;
+    }
+    .section-block h2 {
+      margin: 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #4a90e2;
+      font-size: 28px;
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px 24px;
+      margin-top: 12px;
+    }
+    .field {
+      display: flex;
+    }
+    .field .label {
+      flex-shrink: 0;
+      width: 100px;
+      font-weight: bold;
+      white-space: nowrap;
+      font-size: 24px;
+      margin: 16px;
+    }
+    .field .value {
+      flex: 1;
+      font-size: 24px;
+      margin: 16px;
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: break-word;
+      min-width: 0;
+    }
+    /* 單一欄位跨滿整行，只有超出頁面寬度才換行 */
+    .field-grid .field:last-child {
+      grid-column: 1 / -1;
+    }
+
+    /* 家系圖置中 */
+    .family-tree-img {
+      display: block;
+      margin: 12px auto;
+      max-width: 100%;
+      border: 1px solid #ccc;
+    }
+    .two-col-output {
+      display: flex;
+      gap: 40px;
+      margin-top: 12px;
+    }
+    .two-col-output .col .label {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    /* 5 欄緊急聯絡人 */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px 16px;
+      margin-top: 12px;
+    }
+    .contact-grid .header {
+      font-weight: bold;
+      background: #f3f3f3;
+      padding: 8px;
+    }
+    .contact-grid .cell {
+      padding: 8px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="caseForm">
+    <select name="facility">
+      <option value="">請選擇</option>
+      <option>新北市私立豐禾老人長期照顧中心(養護型)</option>
+      <option>新北市私立靜園老人長期照顧中心(養護型)</option>
+    </select>
+    <input type="text" id="formTitle" placeholder="E1路人甲基本資料表" />
+    <!-- 一、個案基本資料 -->
+    <section class="form-section">
+      <h2>一、個案基本資料</h2>
+      <div class="form-grid">
+        <label>姓名</label><input type="text" name="name" />
+        <label>性別</label>
+        <select name="gender">
+          <option>女</option>
+          <option>男</option>
+        </select>
+        <label>體檢醫院</label><input type="text" name="hospital" />
+        <label>入住日期</label><input type="date" name="checkinDate" />
+        <label>出生日期</label><input type="date" name="dob" />
+        <label>身分證</label><input type="text" name="idNo" />
+        <label>戶籍地址</label><input type="text" name="address" />
+      </div>
+    </section>
+
+    <!-- 二、緊急聯絡人 -->
+    <section class="form-section contacts">
+      <h2>二、緊急聯絡人 <button type="button" id="addContactBtn">＋新增</button></h2>
+      <div id="contacts-container"></div>
+    </section>
+
+    <!-- 三、社會福利別 -->
+    <section class="form-section">
+      <h2>三、社會福利別</h2>
+      <div class="form-grid">
+        <label>身份別</label>
+        <select name="socialId">
+          <option>一般戶</option>
+          <option>中低1.5</option>
+          <option>榮民</option>
+          <option>榮眷</option>
+        </select>
+        <label>保險種類</label>
+        <select name="insuranceType">
+          <option>健保</option>
+          <option>健保及農保</option>
+          <option>健保及勞保</option>
+        </select>
+        <label>經濟來源</label>
+        <select name="incomeSource">
+          <option>子女供養</option>
+          <option>父母供養</option>
+          <option>退休俸</option>
+        </select>
+        <label>身障證明</label><input type="text" name="disabilityProof" />
+      </div>
+    </section>
+
+    <!-- 四、生理 / 心理功能評估 -->
+    <section class="form-section">
+      <h2>四、生理 / 心理功能評估</h2>
+      <div class="form-grid">
+        <label>認知狀態</label>
+        <select name="cognition">
+          <option>混亂</option>
+          <option>清醒</option>
+          <option>無法評估</option>
+        </select>
+        <label>輔具使用</label><input type="text" name="assistiveDevices" />
+        <label>管路</label>
+        <select name="tubes">
+          <option>無</option>
+          <option>鼻胃管</option>
+          <option>導尿管</option>
+          <option>鼻胃管及導尿管</option>
+        </select>
+        <label>表達能力</label>
+        <select name="expression">
+          <option>差</option>
+          <option>佳</option>
+          <option>無法表達</option>
+        </select>
+        <label>飲食形態</label>
+        <select name="diet">
+          <option>軟質</option>
+          <option>管灌</option>
+        </select>
+        <label>入住意願</label>
+        <select name="admission">
+          <option>可接受</option>
+          <option>被告知無反應</option>
+          <option>無法接受</option>
+          <option>未被告知</option>
+        </select>
+        <label>評估摘要</label><textarea name="evalSummary"></textarea>
+      </div>
+    </section>
+
+    <!-- 五、家庭及社會評估 -->
+    <section class="form-section">
+      <h2>五、家庭及社會評估</h2>
+      <div class="form-grid">
+        <label>教育程度</label>
+        <select name="education">
+          <option>小學</option>
+          <option>中學</option>
+          <option>高中職</option>
+          <option>大學以上</option>
+          <option>不識字</option>
+        </select>
+        <label>過去主要職業</label><input type="text" name="pastJob" />
+        <label>申請服務原因</label>
+        <select name="serviceReason">
+          <option>親人無力照顧</option>
+          <option>自願入住</option>
+        </select>
+        <label>居住情形</label>
+        <select name="livingSituation">
+          <option>與子女同住</option>
+          <option>與配偶同住</option>
+          <option>獨居</option>
+        </select>
+        <label>婚姻狀況</label>
+        <select name="maritalStatus">
+          <option>喪偶</option>
+          <option>已婚</option>
+          <option>離婚</option>
+          <option>未婚</option>
+          <option>同居</option>
+          <option>分居</option>
+        </select>
+        <label>生活作息</label>
+        <select name="dailyRoutine">
+          <option>混亂</option>
+          <option>規律</option>
+        </select>
+        <label>主要照顧者</label><input type="text" name="mainCarer" />
+        <label>主要決策者</label><input type="text" name="mainDecisionMaker" />
+        <label>宗教信仰</label>
+        <select name="religion">
+          <option>民間信仰</option>
+          <option>佛教</option>
+          <option>道教</option>
+          <option>基督教</option>
+          <option>一貫道</option>
+        </select>
+        <label>家庭關係</label><textarea name="familyRelation"></textarea>
+      </div>
+    </section>
+
+    <!-- 六、家系圖 -->
+    <section class="form-section">
+      <h2>六、家系圖 📷</h2>
+      <input type="file" accept="image/*" id="familyTreeInput" />
+      <img id="familyTreePreview" src="" alt="家系圖預覽" />
+    </section>
+
+    <!-- 七、助力／阻力 -->
+    <section class="form-section">
+      <h2>七、助力及阻力</h2>
+      <div class="two-col">
+        <div>
+          <label>助力</label>
+          <textarea name="strengths"></textarea>
+        </div>
+        <div>
+          <label>阻力</label>
+          <textarea name="barriers"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- 八、個案來源與退住日期 -->
+    <section class="form-section">
+      <h2>八、個案來源與退住日期</h2>
+      <div class="form-grid">
+        <label>個案來源</label>
+        <select name="caseSource">
+          <option>自行聯絡</option>
+          <option>醫院轉介</option>
+          <option>其他機構</option>
+        </select>
+        <label>退住日期</label><input type="date" name="checkoutDate" />
+      </div>
+    </section>
+
+    <button type="button" id="downloadBtn">生成表單</button>
+  </form>
+
+  <!-- 緊急聯絡人範本 -->
+  <template id="contactTpl">
+    <div class="contact">
+      <button type="button" class="remove-btn">×</button>
+      <div class="form-grid">
+        <label>姓名</label><input type="text" name="contactName[]" />
+        <label>關係</label><input type="text" name="contactRelation[]" />
+        <label>市內電話</label><input type="text" name="contactTel[]" />
+        <label>手機</label><input type="text" name="contactMobile[]" />
+        <label>住址</label><input type="text" name="contactAddress[]" />
+      </div>
+    </div>
+  </template>
+
+  <script>
+    let familyTreeDataUrl = '';
+
+    // 新增／移除緊急聯絡人
+    document.getElementById('addContactBtn').addEventListener('click', () => {
+      const tpl = document.getElementById('contactTpl').content.cloneNode(true);
+      tpl.querySelector('.remove-btn').addEventListener('click', e => {
+        e.target.closest('.contact').remove();
+      });
+      document.getElementById('contacts-container').appendChild(tpl);
+    });
+
+    // 家系圖預覽
+    document.getElementById('familyTreeInput').addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        familyTreeDataUrl = e.target.result;
+        document.getElementById('familyTreePreview').src = familyTreeDataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 通用：生成 3 欄式欄位網格
+    function renderFieldGrid(items) {
+      let html = '<div class="field-grid">';
+      items.forEach(({ label, value }) => {
+        html += `
+          <div class="field">
+            <div class="label">${label}：</div>
+            <div class="value">${value}</div>
+          </div>`;
+      });
+      html += '</div>';
+      return html;
+    }
+
+    // 通用：生成文字區塊
+    function renderSection(title, items) {
+      return `
+        <div class="section-block">
+          <h2>${title}</h2>
+          ${renderFieldGrid(items)}
+        </div>`;
+    }
+
+    // 通用：生成家系圖區塊
+    function renderImageSection(title, imageUrl) {
+      return `
+        <div class="section-block">
+          <h2>${title}</h2>
+          ${imageUrl
+            ? `<img src="${imageUrl}" class="family-tree-img" alt="${title}"/>`
+            : '<div style="margin-top:12px;">（尚未上傳家系圖）</div>'}
+        </div>`;
+    }
+
+    // 通用：生成雙欄區塊
+    function renderTwoColumnSection(title, left, right) {
+      return `
+        <div class="section-block">
+          <h2>${title}</h2>
+          <div class="two-col-output">
+            <div class="col">
+              <div class="label">${left.label}：</div>
+              <div class="value">${left.value}</div>
+            </div>
+            <div class="col">
+              <div class="label">${right.label}：</div>
+              <div class="value">${right.value}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ===== 新增：5 欄緊急聯絡人 =====
+    function renderContactsSection(title, contacts) {
+      let html = `
+        <div class="section-block">
+          <h2>${title}</h2>
+          <div class="contact-grid">
+            <div class="header">姓名</div>
+            <div class="header">關係</div>
+            <div class="header">市內電話</div>
+            <div class="header">手機</div>
+            <div class="header">住址</div>`;
+      contacts.forEach(c => {
+        html += `
+            <div class="cell">${c.name}</div>
+            <div class="cell">${c.rel}</div>
+            <div class="cell">${c.tel}</div>
+            <div class="cell">${c.mob}</div>
+            <div class="cell">${c.addr}</div>`;
+      });
+      return html + `
+          </div>
+        </div>`;
+    }
+
+    // 生成並下載 HTML
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      const formEl = document.getElementById('caseForm');
+      const fd = new FormData(formEl);
+      const G = key => fd.get(key) || '';
+
+      // 從 FormData 取得多筆聯絡人欄位
+      const names = fd.getAll('contactName[]');
+      const rels  = fd.getAll('contactRelation[]');
+      const tels  = fd.getAll('contactTel[]');
+      const mobs  = fd.getAll('contactMobile[]');
+      const addrs = fd.getAll('contactAddress[]');
+
+      // 組成 contacts 陣列
+      const contacts = names.map((name, i) => ({
+        name:  name   || '',
+        rel:   rels[i]   || '',
+        tel:   tels[i]   || '',
+        mob:   mobs[i]   || '',
+        addr:  addrs[i]  || ''
+      }));
+      const contactItems = contacts.flatMap(c =>
+        Object.entries(c).map(([k, v]) => ({ label: k, value: v }))
+      );
+
+      // 各區塊欄位資料
+      const basics = [
+        { label: '姓名', value: G('name') },
+        { label: '性別', value: G('gender') },
+        { label: '體檢醫院', value: G('hospital') },
+        { label: '入住日期', value: G('checkinDate') },
+        { label: '出生日期', value: G('dob') },
+        { label: '身分證', value: G('idNo') },
+        { label: '戶籍地址', value: G('address') }
+      ];
+      const social = [
+        { label: '身份別', value: G('socialId') },
+        { label: '保險種類', value: G('insuranceType') },
+        { label: '經濟來源', value: G('incomeSource') },
+        { label: '身障證明', value: G('disabilityProof') }
+      ];
+      const evaluation = [
+        { label: '認知狀態', value: G('cognition') },
+        { label: '輔具使用', value: G('assistiveDevices') },
+        { label: '管路', value: G('tubes') },
+        { label: '表達能力', value: G('expression') },
+        { label: '飲食形態', value: G('diet') },
+        { label: '入住意願', value: G('admission') },
+        { label: '評估摘要', value: G('evalSummary') }
+      ];
+      const familySocial = [
+        { label: '教育程度', value: G('education') },
+        { label: '過去職業', value: G('pastJob') },
+        { label: '入住原因', value: G('serviceReason') },
+        { label: '居住情形', value: G('livingSituation') },
+        { label: '婚姻狀況', value: G('maritalStatus') },
+        { label: '生活作息', value: G('dailyRoutine') },
+        { label: '照顧者', value: G('mainCarer') },
+        { label: '決策者', value: G('mainDecisionMaker') },
+        { label: '宗教信仰', value: G('religion') },
+        { label: '家庭關係', value: G('familyRelation') }
+      ];
+      const caseSource = [ 
+        { label: '個案來源', value: G('caseSource') },
+        { label: '退住日期', value: G('checkoutDate')},
+        { label: '主管', value: ''},
+        { label: '填表者', value: ''}
+      ];
+      const treeUrl = familyTreeDataUrl;
+
+      // 組頁內容
+      const pages = [];
+      pages.push(`
+        <div class="page">
+          <h1>${G('facility')}</h1>
+          <h1>住民基本資料表</h1>
+          ${renderSection('一、個案基本資料', basics)}
+          ${renderContactsSection('二、緊急聯絡人', contacts)}
+          ${renderSection('三、社會福利別', social)}
+          ${renderSection('四、生理／心理功能評估', evaluation)}
+        </div>`);
+      pages.push(`
+        <div class="page">
+          ${renderSection('五、家庭及社會評估', familySocial)}
+          ${renderImageSection('六、家系圖', treeUrl)}
+          ${renderTwoColumnSection('七、助力及阻力',
+            { label: '助力', value: G('strengths') },
+            { label: '阻力', value: G('barriers') }
+          )}
+          ${renderSection('八、個案來源與退住日期',
+            caseSource
+          )}
+        </div>`);
+
+      // 最終 HTML
+      const exportCss = document.getElementById('exportStyles').innerText;
+      const finalHtml = `<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>個案資料報表</title>
+  <style>${exportCss}</style>
+</head>
+<body>
+  ${pages.join('')}
+</body>
+</html>`;
+
+      // 觸發下載
+      const blob = new Blob([finalHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${document.getElementById('formTitle').value.replace(/\s+/g, "_")}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>物理引擎 x 任務系統 v1.7.0</title>
+  <title>物理引擎 x 任務系統 v1.7.2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin: 0; overflow: hidden; background: #eef; }
@@ -157,7 +157,7 @@
       height:  o.height
     }));
 
-    // 儲存各互動區回呼
+    // 儲存各互動觸發區域回呼
     const interactionHandlers = {};
 
     // 註冊函式：triggerInteraction(區域編號, 回呼函式)
@@ -179,6 +179,47 @@
     triggerInteraction(23, () => {
       if (user.onGround) user.gravity = -12;
     });
+
+    triggerInteraction(13, () => {
+      const overlay = document.getElementById("taskOverlays");
+      if (overlay.querySelector("iframe")) return;// 若已存在 iframe，則不重複建立
+      overlay.innerHTML = "";
+
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "fixed";
+      wrapper.style.left = "50%";
+      wrapper.style.top = "50%";
+      wrapper.style.transform = "translate(-50%, -50%)";
+      wrapper.style.width = "90vw";
+      wrapper.style.height = "90vh";
+      wrapper.style.border = "2px solid #000";
+      wrapper.style.zIndex = 30;
+      wrapper.style.background = "#fff";
+      wrapper.style.pointerEvents = "auto";
+
+      const iframe = document.createElement("iframe");
+      iframe.src = "web/BasicInformationTable.html";
+      iframe.style.width = "100%";
+      iframe.style.height = "100%";
+      iframe.style.border = "none";
+
+      const closeBtn = document.createElement("button");
+      closeBtn.innerText = "❌";
+      closeBtn.style.position = "absolute";
+      closeBtn.style.top = "10px";
+      closeBtn.style.right = "10px";
+      closeBtn.style.zIndex = 31;
+      closeBtn.style.padding = "4px 10px";
+      closeBtn.style.fontSize = "20px";
+      closeBtn.onclick = () => {
+        overlay.innerHTML = "";
+      };
+
+      wrapper.appendChild(iframe);
+      wrapper.appendChild(closeBtn);
+      overlay.appendChild(wrapper);
+    });
+
 
     // --- 按鍵監聽：J 鍵觸發互動 ---
     let jPressed = false;
