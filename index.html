@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>物理引擎 x 任務系統 v1.7.2</title>
+  <title>物理引擎 x 任務系統 v1.7.4</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin: 0; overflow: hidden; background: #eef; }
@@ -568,6 +568,11 @@
         y += lh;
       }
     }
+
+    let addBtnX = 0;
+    let addBtnY = 0;
+    let closeBtnX = 0;
+    let closeBtnY = 0;
     function drawBoard() {
       const panelX = 100, panelY = 100;
       const panelW = viewport.clientWidth - 200;
@@ -583,13 +588,25 @@
       buffer.fillText("懸賞任務", panelX + panelW/2, panelY + 50);
 
       // 新增按鈕
-      const addBtnX = panelX + panelW - 60;
-      const addBtnY = panelY + 20;
+      addBtnX = panelX + 20
+      addBtnY = panelY + 20;
       buffer.fillStyle = "#0f0";
       buffer.fillRect(addBtnX, addBtnY, 40, 40);
       buffer.fillStyle = "#000";
       buffer.font = "bold 30px sans-serif";
       buffer.fillText("+", addBtnX+20, addBtnY+30);
+
+      // 關閉按鈕
+      closeBtnX = panelX + panelW - 60;
+      closeBtnY = panelY + 20;
+
+      // 繪製按鈕
+      buffer.fillStyle = "#f00";
+      buffer.fillRect(closeBtnX, closeBtnY, 40, 40);
+      buffer.fillStyle = "#fff";
+      buffer.font = "bold 30px sans-serif";
+      buffer.fillText("✕", closeBtnX + 20, closeBtnY + 30);
+
 
       const overlayContainer = document.getElementById("taskOverlays");
       overlayContainer.innerHTML = "";
@@ -638,17 +655,22 @@
     canvas.addEventListener("mousedown", e => {
       if (!boardVisible) return;
       const x=e.offsetX, y=e.offsetY;
-      const addBtnX = 100 + (viewport.clientWidth-200) - 60;
-      const addBtnY = 120;
       const centerX = camera.x + viewport.clientWidth / 2;
       const centerY = camera.y + viewport.clientHeight / 2;
-      if (x>=addBtnX && x<=addBtnX+40 && y>=addBtnY && y<=addBtnY+40) {
+      if (x>=addBtnX && x<=addBtnX+40 && y>=addBtnY && y<=addBtnY+40) {// 任務面板新增任務
         const nt = { id:Date.now(), title:"", content:"", x: centerX - 110, y: centerY - 40, iframeVisible: false };
         tasks.push(nt); saveTasks();
         selectedTaskId = nt.id;
         titleInput.value=""; contentTextarea.value="";
         editor.style.display="flex";
         drawBoard(); return;
+      }
+      if (x >= closeBtnX &&x <= closeBtnX + 40 &&y >= closeBtnY &&y <= closeBtnY + 40) {// 關閉任務面板
+        boardVisible = false;
+        const overlay = document.getElementById("taskOverlays");
+        overlay.innerHTML = "";
+        main_loop(lastTime);
+        return;
       }
       for (let t of tasks) {
         if (x>=t.x && x<=t.x+220 && y>=t.y && y<=t.y+80) {
