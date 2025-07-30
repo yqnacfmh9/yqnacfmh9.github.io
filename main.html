@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>物理引擎 v0.8.0</title>
+  <title>物理引擎 v0.8.1</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin: 0; overflow: hidden; background: #eef; }
@@ -257,12 +257,12 @@ npc.name  = "npc";
 const allEntities     = [user, npc];
 const physicsEntities = [user, npc];
 
-user.image.src = "images/test.png";
+user.image.src = "images/role1.png";
 npc.image.src = "images/npc.png";
 
-user.animation.defineState("idle", [0,1], 20, 32, 32);
-user.animation.defineState("run",  [2,3,4], 8,  32, 32);
-user.animation.defineState("jump", [5,6], 20, 32, 32);
+user.animation.defineState("idle", [0,1], 15, 48,51);
+user.animation.defineState("run",  [2,3,4,5], 4, 48,51);
+user.animation.defineState("jump", [6,7], 10, 48,51);
 
 npc.animation.defineState("idle", [0,1,2,3], 20, 23, 27);
 npc.animation.defineState("run",  [4,5,6,7,8,9], 8, 23, 27);
