@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>物理引擎 v0.8.0</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { margin: 0; overflow: hidden; background: #eef; }
+    #viewport { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
+    canvas { display: block; background: #ccc; image-rendering: pixelated; }
+  </style>
+</head>
+<body>
+<div id="viewport"><canvas></canvas></div>
+
+<script src="images/map.js"></script>
+
+<script>
+const canvas   = document.querySelector('canvas');
+const viewport = document.querySelector('#viewport');
+const buffer   = canvas.getContext('2d', { alpha: false });
+const display  = canvas.getContext('2d', { alpha: false });
+
+let game_switch     = true;
+let debugCollision  = false;
+
+const RENDER_SCALE  = 5;
+const ENTITY_SCALE  = 0.5;
+
+if (!window.TileMaps || !TileMaps["map"]) throw new Error("map.js 未載入");
+const mapData = TileMaps["map"];
+const TILE_SIZE = mapData.tileheight;
+
+//---動畫管理器---
+class TileAnimationManager {
+  constructor(tileset) {
+    this.frames = {};
+    if (tileset.tiles) {
+      for (let t of tileset.tiles) {
+        if (t.animation) {
+          this.frames[t.id + tileset.firstgid] = {
+            frames: t.animation,
+            total: t.animation.reduce((s,f) => s + f.duration, 0),
+            elapsed: 0,
+            index: 0
+          };
+        }
+      }
+    }
+  }
+  update(dt) {
+    for (let gid in this.frames) {
+      const anim = this.frames[gid];
+      anim.elapsed = (anim.elapsed + dt) % anim.total;
+      let time = 0;
+      for (let i = 0; i < anim.frames.length; i++) {
+        time += anim.frames[i].duration;
+        if (anim.elapsed < time) {
+          anim.index = i;
+          break;
+        }
+      }
+    }
+  }
+  getTileIndex(gid) {
+    const anim = this.frames[gid];
+    return anim ? anim.frames[anim.index].tileid + mapData.tilesets[0].firstgid - 1 : gid - 1;
+  }
+}
+
+const tileAnimationManager = new TileAnimationManager(mapData.tilesets[0]);
+
+const tileLayers = mapData.layers.filter(l => l.type === "tilelayer" && l.visible);
+const parsedTileLayers = tileLayers.map(layer => ({
+  name: layer.name,
+  widthPx:  mapData.width  * TILE_SIZE,
+  heightPx: mapData.height * TILE_SIZE,
+  data: layer.data,
+}));
+
+const collisionLayer = mapData.layers.find(l => l.type === "objectgroup" && l.name === "collision");
+const collisionBoxes = (collisionLayer?.objects || []).map(obj => ({
+  x: obj.x, y: obj.y, width: obj.width, height: obj.height
+}));
+
+class Animation {
+  constructor() {
+    this.states = {}; this.current = "idle";
+    this.frameSet = []; this.frameIndex = 0;
+    this.count = 0; this.delay = 10;
+    this.width = 32; this.height = 32;
+    this.frame = 0;
+  }
+  defineState(n, fs, d = 10, w = 32, h = 32) {
+    this.states[n] = { frameSet: fs, delay: d, width: w, height: h };
+  }
+  setState(n) {
+    if (this.current !== n && this.states[n]) {
+      const s = this.states[n];
+      Object.assign(this, s, { current: n, frameIndex: 0, count: 0, frame: s.frameSet[0] });
+    }
+  }
+  update() {
+    if (!this.frameSet.length) return;
+    if (++this.count >= this.delay) {
+      this.count = 0;
+      this.frameIndex = (this.frameIndex + 1) % this.frameSet.length;
+      this.frame = this.frameSet[this.frameIndex];
+    }
+  }
+}
+
+class Entity {
+  constructor(x = 0, y = 0, w = 32, h = 32, color = 'green', velocity = 1) {
+    Object.assign(this, { x, y, width: w, height: h, color, velocity, gravity: 0, flip: false });
+    this.image = new Image(); this.animation = new Animation();
+    this.onGround = false; this.name = "";
+  }
+  save() {
+    return { name: this.name, x: this.x, y: this.y, flip: this.flip, state: this.animation.current };
+  }
+  load(data) {
+    if (!data) return;
+    Object.assign(this, data);
+    this.animation.setState(data.state);
+  }
+  drawSprite(offsetX = 0, offsetY = 0, scale = 1) {
+    buffer.save();
+    buffer.scale(this.flip ? -1 : 1, 1);
+    const drawX = this.flip ? (this.x + this.width * scale + offsetX) * -1 : this.x + offsetX;
+    buffer.drawImage(
+      this.image,
+      this.animation.frame * this.animation.width, 0,
+      this.animation.width, this.animation.height,
+      drawX * RENDER_SCALE, (this.y + offsetY) * RENDER_SCALE,
+      this.width * RENDER_SCALE * scale, this.height * RENDER_SCALE * scale
+    );
+    buffer.restore();
+  }
+  physics(g = 0.6) { this.gravity += g; this.y += this.gravity; }
+  checkCollision(boxes, scale = 1) {
+    this.onGround = false;
+    const sw = this.width * scale, sh = this.height * scale;
+    for (let b of boxes) {
+      if (this.x + sw > b.x && this.x < b.x + b.width &&
+          this.y + sh > b.y && this.y < b.y + b.height) {
+        this.y = b.y - sh; this.gravity = 0; this.onGround = true; break;
+      }
+    }
+  }
+  follow(target) {
+    const dx = target.x - this.x, dy = target.y - this.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 20) {
+      this.x += this.velocity * dx / dist;
+      this.y += this.velocity * dy / dist;
+      this.animation.setState("run");
+    } else {
+      this.animation.setState("idle");
+    }
+    this.flip = this.x > user.x;
+    this.animation.update();
+  }
+  hitbox(alpha = 1.0, scale = 1) {
+    buffer.save();
+    buffer.globalAlpha = alpha;
+    buffer.fillStyle = this.color;
+    buffer.fillRect(
+      this.x * RENDER_SCALE,
+      this.y * RENDER_SCALE,
+      this.width * RENDER_SCALE * scale,
+      this.height * RENDER_SCALE * scale
+    );
+    buffer.restore();
+  }
+}
+
+const tileImage = new Image();
+tileImage.src = "images/SpriteSheet.png";
+
+function drawTileLayer(layer) {
+  const tilesPerRow = tileImage.width / TILE_SIZE | 0;
+  let i = 0;
+  for (let ty = 0; ty < mapData.height; ty++) {
+    for (let tx = 0; tx < mapData.width; tx++) {
+      const gid = layer.data[i++];
+      if (!gid) continue;
+      const tile = tileAnimationManager.getTileIndex(gid);
+      const sx = (tile % tilesPerRow) * TILE_SIZE;
+      const sy = Math.floor(tile / tilesPerRow) * TILE_SIZE;
+      buffer.drawImage(
+        tileImage,
+        sx, sy, TILE_SIZE, TILE_SIZE,
+        tx * TILE_SIZE * RENDER_SCALE,
+        ty * TILE_SIZE * RENDER_SCALE,
+        TILE_SIZE * RENDER_SCALE,
+        TILE_SIZE * RENDER_SCALE
+      );
+    }
+  }
+}
+
+function drawCollisionBoxes(boxes, scale = 1, fillColor = 'rgba(0,0,255,0.3)', borderColor = 'blue') {
+  buffer.save();
+  buffer.lineWidth = 1;
+  for (let b of boxes) {
+    const x = b.x * scale, y = b.y * scale, w = b.width * scale, h = b.height * scale;
+    buffer.fillStyle = fillColor;
+    buffer.fillRect(x, y, w, h);
+    buffer.strokeStyle = borderColor;
+    buffer.strokeRect(x, y, w, h);
+  }
+  buffer.restore();
+}
+
+function camera(role) {
+  const targetX = role.x * RENDER_SCALE - viewport.clientWidth / 2;
+  const targetY = role.y * RENDER_SCALE - viewport.clientHeight / 2;
+  viewport.scrollLeft = Math.max(0, Math.min(targetX, canvas.width - viewport.clientWidth));
+  viewport.scrollTop  = Math.max(0, Math.min(targetY, canvas.height - viewport.clientHeight));
+}
+
+let control_right = false, control_left = false, control_up = false;
+function keyboard_mod(type, value) {
+  addEventListener(type, (e) => {
+    if (e.code === 'KeyD') control_right = value;
+    else if (e.code === 'KeyA') control_left = value;
+    else if (e.code === 'KeyW') control_up = value;
+  });
+}
+keyboard_mod('keydown', true);
+keyboard_mod('keyup', false);
+
+function control(role) {
+  if (control_right) {
+    role.x += 2;
+    role.flip = false;
+    role.animation.setState("run");
+  } else if (control_left) {
+    role.x -= 2;
+    role.flip = true;
+    role.animation.setState("run");
+  } else if (!role.onGround) {
+    role.animation.setState("jump");
+  } else {
+    role.animation.setState("idle");
+  }
+  if (control_up && role.onGround) role.gravity = -8;
+}
+
+// 實體初始化
+const user = new Entity(300, 0, 32, 32, 'red');
+const npc  = new Entity(200, 0, 32, 32, 'yellow');
+user.name = "user";
+npc.name  = "npc";
+
+const allEntities     = [user, npc];
+const physicsEntities = [user, npc];
+
+user.image.src = "images/test.png";
+npc.image.src = "images/npc.png";
+
+user.animation.defineState("idle", [0,1], 20, 32, 32);
+user.animation.defineState("run",  [2,3,4], 8,  32, 32);
+user.animation.defineState("jump", [5,6], 20, 32, 32);
+
+npc.animation.defineState("idle", [0,1,2,3], 20, 23, 27);
+npc.animation.defineState("run",  [4,5,6,7,8,9], 8, 23, 27);
+
+// 儲存 / 載入功能
+function saveGame() {
+  const entityStates = allEntities.map(e => e.save());
+  localStorage.setItem('gameSave', JSON.stringify({ entities: entityStates }));
+  console.log('✅ 儲存完成');
+}
+function loadGame() {
+  const data = JSON.parse(localStorage.getItem('gameSave'));
+  if (!data || !Array.isArray(data.entities)) return;
+  for (let state of data.entities) {
+    const entity = allEntities.find(e => e.name === state.name);
+    if (entity) entity.load(state);
+  }
+  console.log('✅ 載入完成');
+}
+
+// 快捷鍵
+addEventListener('keydown', e => {
+  if (e.code === 'KeyP') game_switch = !game_switch, game_switch && main_loop();
+  if (e.code === 'KeyH') debugCollision = !debugCollision;
+  if (e.code === 'ArrowUp') saveGame();
+  if (e.code === 'ArrowDown') loadGame();
+});
+
+// 畫布大小
+function resizeCanvas() {
+  const w = mapData.width  * TILE_SIZE * RENDER_SCALE;
+  const h = mapData.height * TILE_SIZE * RENDER_SCALE;
+  canvas.width = buffer.canvas.width = display.canvas.width = w;
+  canvas.height = buffer.canvas.height = display.canvas.height = h;
+  buffer.imageSmoothingEnabled = display.imageSmoothingEnabled = false;
+}
+
+// 主迴圈
+let lastTime = performance.now();
+function main_loop() {
+  if (!game_switch) return;
+  requestAnimationFrame(main_loop);
+
+  const now = performance.now();
+  const delta = now - lastTime;
+  lastTime = now;
+
+  tileAnimationManager.update(delta);
+
+  buffer.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let entity of physicsEntities) {
+    entity.physics();
+    entity.checkCollision(collisionBoxes, ENTITY_SCALE);
+  }
+
+  control(user);
+  user.animation.update();
+  npc.follow(user);
+
+  for (let layer of parsedTileLayers) {
+    drawTileLayer(layer);
+  }
+
+  if (debugCollision) {
+    drawCollisionBoxes(collisionBoxes, RENDER_SCALE);
+    user.hitbox(0.5, ENTITY_SCALE);
+    npc.hitbox(1.0, ENTITY_SCALE);
+  }
+
+  user.drawSprite(0, 0, ENTITY_SCALE);
+  npc.drawSprite(0, 0, ENTITY_SCALE);
+
+  camera(user);
+}
+
+// 啟動
+resizeCanvas();
+main_loop();
+</script>
+</body>
+</html>
