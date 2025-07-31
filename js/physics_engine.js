@@ -221,6 +221,25 @@ triggerInteraction(13, () => {
     overlay.appendChild(wrapper);
 });
 
+triggerInteraction(26, () => {
+    exportAllData()
+});
+
+triggerInteraction(27, () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.style.display = "none";
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (file) importAllData(file);
+  };
+  document.body.appendChild(input);
+  input.click();
+  document.body.removeChild(input);
+});
+
+
 
 
 //動畫類別
@@ -430,6 +449,42 @@ function loadGame() {
     if (e) e.load(s);
     }
 }
+// 匯出所有資料
+function exportAllData() {
+  const data = {
+    canvasTasks: tasks,
+    gameSave: JSON.parse(localStorage.getItem('gameSave') || '{}')
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "Data_export.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+// 匯入所有資料
+function importAllData(file) {
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.canvasTasks && Array.isArray(data.canvasTasks)) {
+        tasks = data.canvasTasks;
+        saveTasks();
+      }
+      if (data.gameSave && Array.isArray(data.gameSave.entities)) {
+        localStorage.setItem('gameSave', JSON.stringify(data.gameSave));
+        loadGame();
+      }
+      alert("資料匯入成功！");
+    } catch (err) {
+      alert("匯入失敗：格式錯誤或解析錯誤");
+    }
+  };
+  reader.readAsText(file);
+}
+
 
 
 // 任務系統界面
@@ -494,17 +549,15 @@ function drawBoard() {
     // 關閉按鈕
     closeBtnX = panelX + panelW - 60;
     closeBtnY = panelY + 20;
-
-    // 繪製按鈕
     buffer.fillStyle = "#f00";
     buffer.fillRect(closeBtnX, closeBtnY, 40, 40);
     buffer.fillStyle = "#fff";
     buffer.font = "bold 30px sans-serif";
     buffer.fillText("✕", closeBtnX + 20, closeBtnY + 30);
 
-
     const overlayContainer = document.getElementById("taskOverlays");
     overlayContainer.innerHTML = "";
+
 
     for (let t of tasks) {
         buffer.fillStyle = "#fff";
