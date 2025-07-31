@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>生活公約1.0.0</title>
+    <title>生活公約1.0.1</title>
     <style>
         body {
             font-family: "標楷體";
@@ -21,13 +21,24 @@
             padding-left: 20px;
             font-size: 18px;
         }
+        .section{
+            text-indent: -1em;  /* 向左縮排 */ 
+            font-size: 18px;
+        }
         .print-button {
             background-color: #4CAF50;
             color: white;
         }
+        @page {
+            size: A4;
+            margin: 2mm;
+        }
         @media print {
             .print-button {
                 display: none;
+            }
+            .page-break {
+                page-break-before: always;  /* 分頁符號 */
             }
         }
     </style>
@@ -47,7 +58,7 @@
         <li><span class="red">家屬如有感冒症狀，請避免前來中心探訪住民</span></li>
         <li>為維護中心環境與住民之健康，本中心全面<span class="red">禁止抽菸、飲酒、嚼食檳榔。</span></li>
         <li><span class="red">貴重物品請勿攜帶至中心</span>，以避免遺失；若有攜帶金錢財物，經住民（家屬）同意後，可委託本中心行政人員登記保管。</li>
-        <li><span class="red">本中心提供公用手機</span>給家屬聯絡住民免受時限困擾，為確保住民的安寧：<span class="red">禁止攜帶個<br>人手機</span>，煩請住民與家屬配合；若有住民隨身攜帶手機，也請家屬帶回。</li>
+        <li><span class="red">本中心提供公用手機</span>給家屬聯絡住民免受時限困擾，為確保住民的安寧：<span class="red">禁止攜帶個人手機</span>，煩請住民與家屬配合；若有住民隨身攜帶手機，也請家屬帶回。</li>
         <li><span class="red">請勿任意進入護理站或翻閱住民資料切勿讓住民私自用藥。</span>，以維護住民個人隱私及權益。</li>
         <li>住民用藥，請交由本中心護理人員配藥，<span class="red">切勿讓住民私自用藥。</span></li>
         <li>住民如需請假外出，請<span class="red">告知護理人員並填寫請假登記表</span>；另家屬請視天氣狀況與住民健康狀況，自行決定是否適合外出，始得離開。</li>
@@ -55,30 +66,32 @@
         <li>為維護住民生活品質，晚上八點過後，請降低視聽設備（收音機、電視）以及談話音量，以免干擾他人。</li>
     </ol>
 
+    <div class="page-break"></div>
+
     <h1>權利與義務</h1>
 
     <div class="section">
-        <strong>1. 日常生活照顧及健康管理：</strong><br>
-        本中心聘有資深護理人員和照顧服務員，為入住長輩進行完整的照護需求評估，以及護理措施的成效評值，依據護理人員的指導，照顧服務員每日進行的日常生活照顧 (含管路護理、生命徵象測量…等)，訂定完整的健康管理計畫和定期的健康檢查及流感、肺炎疫苗注射。
+        <strong>1.日常生活照顧及健康管理：</strong><br>
+        本中心聘有資深護理人員和照顧服務員，為入住長輩進行完整的照護需求評估，以及護理措施的成效評值，依據護理人員的指導，照顧服務員每日進行的日常生活照顧：含管路護理、生命徵象測量…等，訂定完整的健康管理計畫和定期的健康檢查及流感、肺炎疫苗注射。
     </div>
 
     <div class="section">
-        <strong>2. 定期醫師巡診：</strong><br>
+        <strong>2.定期醫師巡診：</strong><br>
         本中心有宏仁醫院醫師為本中心長者看診，每月巡診一次，若有需要可隨時與醫師聯絡及討論病情，期能夠達到「預防重於治療的效果」。
     </div>
 
     <div class="section">
-        <strong>3. 文康休閒娛樂活動：</strong><br>
+        <strong>3.文康休閒娛樂活動：</strong><br>
         依長輩興趣及專長設計，適合於每日或每週進行的簡單體能、才藝、康樂等活動；每月或每季並規劃安排適合之慶生和節慶大型娛樂活動，請家屬多多參與。
     </div>
 
     <div class="section">
-        <strong>4. 圖書、雜誌借閱：</strong><br>
+        <strong>4.圖書、雜誌借閱：</strong><br>
         本中心於大廳公開陳列各類書報雜誌，供中心住民自由取閱。
     </div>
 
     <div class="section">
-        <strong>5. 申訴管道：</strong><br>
+        <strong>5.申訴管道：</strong><br>
         提供住民及家屬暢通的申訴管道和多元的方法，作為意見交流或改進之參考。<br>
         - 電話：(02) 8972-0177<br>
         - 電子信箱：fonghe0224@gmail.com<br>
@@ -87,7 +100,7 @@
     </div>
 
     <div class="section">
-        <strong>6. 家屬應盡之義務（家屬需負擔費用）：</strong><br>
+        <strong>6.家屬應盡之義務（家屬需負擔費用）：</strong><br>
         - 住民或家屬應支付平日門診或緊急醫療時看診之診療費用，以及每趟來回交通服務費與陪診費(當需跟診，但家屬未能陪診時)，收費方式另行協商。<br>
         - 管灌或因特殊疾病所產生之個人特殊營養品費用。<br>
         - 更換管路的護理材料費。<br>
