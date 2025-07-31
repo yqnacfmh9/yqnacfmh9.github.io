@@ -54,32 +54,32 @@ const interactiveZones = (interactiveLayer?.objects || []).map(o => ({
 // 互動區域偵測
 function checkInteractions(scale = 1){
     for(let zone of interactiveZones){
-    const sw=user.width*scale, sh=user.height*scale;
-    const overlap=
-        user.x+sw>zone.x&&user.x<zone.x+zone.width&&
-        user.y+sh>zone.y&&user.y<zone.y+zone.height;
-    if(!overlap) continue;
-    if(debug_switch){
-        buffer.save();
-        buffer.strokeStyle='green'; buffer.lineWidth=2;
-        buffer.strokeRect(
-        zone.x*RENDER_SCALE-camera.x,
-        zone.y*RENDER_SCALE-camera.y,
-        zone.width*RENDER_SCALE,
-        zone.height*RENDER_SCALE
-        );
-        buffer.fillStyle='green'; buffer.font='16px sans-serif';
-        buffer.fillText(
-        zone.id,
-        zone.x*RENDER_SCALE-camera.x+4,
-        zone.y*RENDER_SCALE-camera.y+16
-        );
-        buffer.restore();
-    }
-    if(jPressed && interactionHandlers[zone.id]){
-        interactionHandlers[zone.id]();
-        jPressed=false;
-    }
+        const sw=user.width*scale, sh=user.height*scale;
+        const overlap=
+            user.x+sw>zone.x&&user.x<zone.x+zone.width&&
+            user.y+sh>zone.y&&user.y<zone.y+zone.height;
+        if(!overlap) continue;
+        if(debug_switch){
+            buffer.save();
+            buffer.strokeStyle='green'; buffer.lineWidth=2;
+            buffer.strokeRect(
+            zone.x*RENDER_SCALE-camera.x,
+            zone.y*RENDER_SCALE-camera.y,
+            zone.width*RENDER_SCALE,
+            zone.height*RENDER_SCALE
+            );
+            buffer.fillStyle='green'; buffer.font='16px sans-serif';
+            buffer.fillText(
+            zone.id,
+            zone.x*RENDER_SCALE-camera.x+4,
+            zone.y*RENDER_SCALE-camera.y+16
+            );
+            buffer.restore();
+        }
+        if(jPressed && interactionHandlers[zone.id]){
+            interactionHandlers[zone.id]();
+            jPressed=false;
+        }
     }
 }
 
@@ -89,25 +89,25 @@ for (let ts of mapData.tilesets) {
     if (!ts.tiles) continue;
     const baseGid = ts.firstgid;
     for (let tile of ts.tiles) {
-    if (tile.animation) {
-        const gid = tile.id + baseGid;
-        animatedTiles[gid] = {
-        frames:    tile.animation.map(f => f.tileid + baseGid),
-        durations: tile.animation.map(f => f.duration),
-        index:     0,
-        timer:     0
-        };
-    }
+        if (tile.animation) {
+            const gid = tile.id + baseGid;
+            animatedTiles[gid] = {
+            frames:    tile.animation.map(f => f.tileid + baseGid),
+            durations: tile.animation.map(f => f.duration),
+            index:     0,
+            timer:     0
+            };
+        }
     }
 }
 // 更新動畫圖塊
 function updateTileAnimations(dt) {
     for (let at of Object.values(animatedTiles)) {
-    at.timer += dt;
-    while (at.timer >= at.durations[at.index]) {
-        at.timer -= at.durations[at.index];
-        at.index = (at.index + 1) % at.frames.length;
-    }
+        at.timer += dt;
+        while (at.timer >= at.durations[at.index]) {
+            at.timer -= at.durations[at.index];
+            at.index = (at.index + 1) % at.frames.length;
+        }
     }
 }
 
@@ -119,24 +119,24 @@ function drawTileLayer(layer) {
     const tilesPerRow = tileImage.width / TILE_SIZE | 0;
     let i = 0;
     for (let ty = 0; ty < mapData.height; ty++) {
-    for (let tx = 0; tx < mapData.width; tx++) {
-        let gid = layer.data[i++];
-        if (!gid) continue;
-        if (animatedTiles[gid]) {
-        gid = animatedTiles[gid].frames[animatedTiles[gid].index];
+        for (let tx = 0; tx < mapData.width; tx++) {
+            let gid = layer.data[i++];
+            if (!gid) continue;
+            if (animatedTiles[gid]) {
+                gid = animatedTiles[gid].frames[animatedTiles[gid].index];
+            }
+            const t  = gid - 1;
+            const sx = (t % tilesPerRow) * TILE_SIZE;
+            const sy = Math.floor(t / tilesPerRow) * TILE_SIZE;
+            buffer.drawImage(
+            tileImage,
+            sx, sy, TILE_SIZE, TILE_SIZE,
+            tx*TILE_SIZE*RENDER_SCALE,
+            ty*TILE_SIZE*RENDER_SCALE,
+            TILE_SIZE*RENDER_SCALE,
+            TILE_SIZE*RENDER_SCALE
+            );
         }
-        const t  = gid - 1;
-        const sx = (t % tilesPerRow) * TILE_SIZE;
-        const sy = Math.floor(t / tilesPerRow) * TILE_SIZE;
-        buffer.drawImage(
-        tileImage,
-        sx, sy, TILE_SIZE, TILE_SIZE,
-        tx*TILE_SIZE*RENDER_SCALE,
-        ty*TILE_SIZE*RENDER_SCALE,
-        TILE_SIZE*RENDER_SCALE,
-        TILE_SIZE*RENDER_SCALE
-        );
-    }
     }
 }
 // 繪製碰撞盒
@@ -145,14 +145,14 @@ function drawCollisionBoxes(boxes, scale=1, fillColor='rgba(0,0,255,0.3)', borde
     buffer.fillStyle   = fillColor;
     buffer.strokeStyle = borderColor;
     for (let b of boxes) {
-    buffer.fillRect(
-        b.x*scale*RENDER_SCALE, b.y*scale*RENDER_SCALE,
-        b.width*scale*RENDER_SCALE, b.height*scale*RENDER_SCALE
-    );
-    buffer.strokeRect(
-        b.x*scale*RENDER_SCALE, b.y*scale*RENDER_SCALE,
-        b.width*scale*RENDER_SCALE, b.height*scale*RENDER_SCALE
-    );
+        buffer.fillRect(
+            b.x*scale*RENDER_SCALE, b.y*scale*RENDER_SCALE,
+            b.width*scale*RENDER_SCALE, b.height*scale*RENDER_SCALE
+        );
+        buffer.strokeRect(
+            b.x*scale*RENDER_SCALE, b.y*scale*RENDER_SCALE,
+            b.width*scale*RENDER_SCALE, b.height*scale*RENDER_SCALE
+        );
     }
     buffer.restore();
 }
@@ -172,8 +172,8 @@ triggerInteraction(12, () => {
     const overlay = document.getElementById("taskOverlays");
     if (boardVisible) drawBoard();
     else {
-    overlay.innerHTML = "";
-    main_loop(lastTime);
+        overlay.innerHTML = "";
+        main_loop(lastTime);
     }
 });
 
@@ -222,174 +222,165 @@ triggerInteraction(13, () => {
 });
 
 
-// --- 按鍵監聽：J 鍵觸發互動 ---
-let jPressed = false;
-addEventListener("keydown", e => {
-    if (e.code === "KeyJ") jPressed = true;
-});
-addEventListener("keyup", e => {
-    if (e.code === "KeyJ") jPressed = false;
-});
-
 
 //動畫類別
 class Animation {
     constructor() {
-    this.states   = {};
-    this.current  = "idle";
-    this.frameSet = [];
-    this.frameIndex = 0;
-    this.count    = 0;
-    this.delay    = 10;
-    this.width    = 32;
-    this.height   = 32;
-    this.frame    = 0;
+        this.states   = {};
+        this.current  = "idle";
+        this.frameSet = [];
+        this.frameIndex = 0;
+        this.count    = 0;
+        this.delay    = 10;
+        this.width    = 32;
+        this.height   = 32;
+        this.frame    = 0;
     }
     defineState(name, frameSet, delay=10, w=32, h=32) {
-    this.states[name] = { frameSet, delay, width: w, height: h };
+        this.states[name] = { frameSet, delay, width: w, height: h };
     }
     setState(name) {
-    if (this.current !== name && this.states[name]) {
-        const s = this.states[name];
-        this.frameSet   = s.frameSet;
-        this.delay      = s.delay;
-        this.width      = s.width;
-        this.height     = s.height;
-        this.current    = name;
-        this.frameIndex = 0;
-        this.count      = 0;
-        this.frame      = s.frameSet[0];
-    }
+        if (this.current !== name && this.states[name]) {
+            const s = this.states[name];
+            this.frameSet   = s.frameSet;
+            this.delay      = s.delay;
+            this.width      = s.width;
+            this.height     = s.height;
+            this.current    = name;
+            this.frameIndex = 0;
+            this.count      = 0;
+            this.frame      = s.frameSet[0];
+        }
     }
     update() {
-    if (!this.frameSet.length) return;
-    this.count++;
-    if (this.count >= this.delay) {
-        this.count = 0;
-        this.frameIndex = (this.frameIndex + 1) % this.frameSet.length;
-        this.frame = this.frameSet[this.frameIndex];
-    }
+        if (!this.frameSet.length) return;
+        this.count++;
+        if (this.count >= this.delay) {
+            this.count = 0;
+            this.frameIndex = (this.frameIndex + 1) % this.frameSet.length;
+            this.frame = this.frameSet[this.frameIndex];
+        }
     }
 }
 // 實體類別
 class Entity {
     constructor(x=0, y=0, w=32, h=32, color='red', velocity=1) {
-    Object.assign(this, { x, y, width: w, height: h, color, velocity, gravity: 0, flip: false });
-    this.image     = new Image();
-    this.animation = new Animation();
-    this.onGround  = false;
-    this.name      = "";
+        Object.assign(this, { x, y, width: w, height: h, color, velocity, gravity: 0, flip: false });
+        this.image     = new Image();
+        this.animation = new Animation();
+        this.onGround  = false;
+        this.name      = "";
     }
     save() {
-    return { name:this.name, x:this.x, y:this.y, flip:this.flip, state:this.animation.current };
+        return { name:this.name, x:this.x, y:this.y, flip:this.flip, state:this.animation.current };
     }
     load(data) {
-    if (!data) return;
-    this.x    = data.x;
-    this.y    = data.y;
-    this.flip = data.flip;
-    this.animation.setState(data.state);
+        if (!data) return;
+        this.x    = data.x;
+        this.y    = data.y;
+        this.flip = data.flip;
+        this.animation.setState(data.state);
     }
     drawSprite(scale = 1, tintColor = { r: 235, g: 9, b: 9 }, tintAlpha = 0, blendMode = 'soft-light') {
-    const sw = this.animation.width;
-    const sh = this.animation.height;
-    const offCanvas = document.createElement('canvas');
-    const offCtx    = offCanvas.getContext('2d');
-    offCanvas.width = sw; offCanvas.height = sh;
+        const sw = this.animation.width;
+        const sh = this.animation.height;
+        const offCanvas = document.createElement('canvas');
+        const offCtx    = offCanvas.getContext('2d');
+        offCanvas.width = sw; offCanvas.height = sh;
 
-    // 原始幀
-    offCtx.drawImage(
-        this.image,
-        this.animation.frame * sw, 0, sw, sh,
-        0, 0, sw, sh
-    );
-    // 染色層
-    offCtx.globalCompositeOperation = blendMode;
-    offCtx.fillStyle = `rgba(${tintColor.r}, ${tintColor.g}, ${tintColor.b}, ${tintAlpha})`;
-    offCtx.fillRect(0, 0, sw, sh);
-    // 透明遮罩
-    offCtx.globalCompositeOperation = 'destination-in';
-    offCtx.drawImage(
-        this.image,
-        this.animation.frame * sw, 0, sw, sh,
-        0, 0, sw, sh
-    );
-    // 主畫布
-    buffer.save();
-    buffer.scale(this.flip ? -1 : 1, 1);
-    const dx = this.flip
-        ? -(this.x * RENDER_SCALE + this.width * RENDER_SCALE * scale)
-        : this.x * RENDER_SCALE;
-    buffer.drawImage(
-        offCanvas,
-        0, 0, sw, sh,
-        dx, this.y * RENDER_SCALE,
-        this.width * RENDER_SCALE * scale,
-        this.height * RENDER_SCALE * scale
-    );
-    buffer.restore();
+        // 原始幀
+        offCtx.drawImage(
+            this.image,
+            this.animation.frame * sw, 0, sw, sh,
+            0, 0, sw, sh
+        );
+        // 染色層
+        offCtx.globalCompositeOperation = blendMode;
+        offCtx.fillStyle = `rgba(${tintColor.r}, ${tintColor.g}, ${tintColor.b}, ${tintAlpha})`;
+        offCtx.fillRect(0, 0, sw, sh);
+        // 透明遮罩
+        offCtx.globalCompositeOperation = 'destination-in';
+        offCtx.drawImage(
+            this.image,
+            this.animation.frame * sw, 0, sw, sh,
+            0, 0, sw, sh
+        );
+        // 主畫布
+        buffer.save();
+        buffer.scale(this.flip ? -1 : 1, 1);
+        const dx = this.flip
+            ? -(this.x * RENDER_SCALE + this.width * RENDER_SCALE * scale)
+            : this.x * RENDER_SCALE;
+        buffer.drawImage(
+            offCanvas,
+            0, 0, sw, sh,
+            dx, this.y * RENDER_SCALE,
+            this.width * RENDER_SCALE * scale,
+            this.height * RENDER_SCALE * scale
+        );
+        buffer.restore();
     }
     physics(gravity=0.6) {
-    this.gravity += gravity;
-    this.y += this.gravity;
+        this.gravity += gravity;
+        this.y += this.gravity;
     }
     checkCollision(boxes, scale = 1) {
-    this.onGround = false;
-    const sw = this.width * scale;
-    const sh = this.height * scale;
-    const nextX = this.x;
-    const nextY = this.y + this.gravity;
-    for (let b of boxes) {
-        const bx = b.x, by = b.y, bw = b.width, bh = b.height;
-        const collided =
-        nextX + sw > bx &&
-        nextX < bx + bw &&
-        nextY + sh > by &&
-        nextY < by + bh;
-        if (!collided) continue;
-        const dx = (nextX + sw / 2) - (bx + bw / 2);
-        const dy = (nextY + sh / 2) - (by + bh / 2);
-        const wy = (sw + bw) / 2;
-        const hx = (sh + bh) / 2;
-        if (Math.abs(dx) <= wy && Math.abs(dy) <= hx) {
-        const wy_diff = wy - Math.abs(dx);
-        const hx_diff = hx - Math.abs(dy);
-        if (wy_diff < hx_diff) {
-            // 左右牆
-            if (dx > 0) this.x = bx + bw;
-            else        this.x = bx - sw;
-        } else {
-            // 地板 / 天花板
-            if (dy > 0) {
-            this.y = by + bh; this.gravity = 0;
-            } else {
-            this.y = by - sh; this.gravity = 0; this.onGround = true;
+        this.onGround = false;
+        const sw = this.width * scale;
+        const sh = this.height * scale;
+        const nextX = this.x;
+        const nextY = this.y + this.gravity;
+        for (let b of boxes) {
+            const bx = b.x, by = b.y, bw = b.width, bh = b.height;
+            const collided =
+            nextX + sw > bx &&
+            nextX < bx + bw &&
+            nextY + sh > by &&
+            nextY < by + bh;
+            if (!collided) continue;
+            const dx = (nextX + sw / 2) - (bx + bw / 2);
+            const dy = (nextY + sh / 2) - (by + bh / 2);
+            const wy = (sw + bw) / 2;
+            const hx = (sh + bh) / 2;
+            if (Math.abs(dx) <= wy && Math.abs(dy) <= hx) {
+                const wy_diff = wy - Math.abs(dx);
+                const hx_diff = hx - Math.abs(dy);
+                if (wy_diff < hx_diff) {
+                    // 左右牆
+                    if (dx > 0) this.x = bx + bw;
+                    else        this.x = bx - sw;
+                } else {
+                    // 地板 / 天花板
+                    if (dy > 0) {
+                        this.y = by + bh; this.gravity = 0;
+                    } else {
+                        this.y = by - sh; this.gravity = 0; this.onGround = true;
+                    }
+                }
             }
         }
-        }
-    }
     }
     follow(target) {
-    const dx = target.x - this.x;
-    const dy = target.y - this.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 20) {
-        this.x += this.velocity * dx / dist;
-        this.y += this.velocity * dy / dist;
-        this.animation.setState("run");
-    } else this.animation.setState("idle");
-    this.flip = this.x > target.x;
-    this.animation.update();
+        const dx = target.x - this.x;
+        const dy = target.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 20) {
+            this.x += this.velocity * dx / dist;
+            this.y += this.velocity * dy / dist;
+            this.animation.setState("run");
+        } else this.animation.setState("idle");
+        this.flip = this.x > target.x;
+        this.animation.update();
     }
     hitbox(alpha=1, scale=1) {
-    buffer.save();
-    buffer.globalAlpha = alpha;
-    buffer.fillStyle   = this.color;
-    buffer.fillRect(
-        this.x*RENDER_SCALE, this.y*RENDER_SCALE,
-        this.width*RENDER_SCALE*scale, this.height*RENDER_SCALE*scale
-    );
-    buffer.restore();
+        buffer.save();
+        buffer.globalAlpha = alpha;
+        buffer.fillStyle   = this.color;
+        buffer.fillRect(
+            this.x*RENDER_SCALE, this.y*RENDER_SCALE,
+            this.width*RENDER_SCALE*scale, this.height*RENDER_SCALE*scale
+        );
+        buffer.restore();
     }
 }
 
@@ -461,15 +452,15 @@ function wrapTextCentered(text, cx, sy, maxW, lh) {
     const words = text.split(' ');
     let line="", y=sy, lines=[];
     for (let w of words) {
-    const t = line + w + ' ';
-    if (buffer.measureText(t).width > maxW && line.length) {
-        lines.push(line); line = w + ' ';
-    } else line = t;
+        const t = line + w + ' ';
+        if (buffer.measureText(t).width > maxW && line.length) {
+            lines.push(line); line = w + ' ';
+        } else line = t;
     }
     lines.push(line);
     for (let l of lines) {
-    buffer.fillText(l.trim(), cx, y);
-    y += lh;
+        buffer.fillText(l.trim(), cx, y);
+        y += lh;
     }
 }
 
@@ -516,41 +507,41 @@ function drawBoard() {
     overlayContainer.innerHTML = "";
 
     for (let t of tasks) {
-    buffer.fillStyle = "#fff";
-    buffer.fillRect(t.x,t.y,220,80);
-    buffer.strokeStyle = "#000";
-    buffer.strokeRect(t.x,t.y,220,80);
-    buffer.fillStyle = "#000";
-    buffer.font = "bold 18px sans-serif";
-    buffer.textAlign = "center";
-    wrapTextCentered(t.title || "(無標題)", t.x+110, t.y+25, 200, 22);
+        buffer.fillStyle = "#fff";
+        buffer.fillRect(t.x,t.y,220,80);
+        buffer.strokeStyle = "#000";
+        buffer.strokeRect(t.x,t.y,220,80);
+        buffer.fillStyle = "#000";
+        buffer.font = "bold 18px sans-serif";
+        buffer.textAlign = "center";
+        wrapTextCentered(t.title || "(無標題)", t.x+110, t.y+25, 200, 22);
 
-    if (t.content.trim().startsWith("<iframe")) {
-        const toggleBtn = document.createElement("button");
-        toggleBtn.innerText = t.iframeVisible ? "❌" : "🟢";
-        toggleBtn.style.position = "absolute";
-        toggleBtn.style.left = `${t.x + 10}px`;
-        toggleBtn.style.top = `${t.y + 50}px`;
-        toggleBtn.style.zIndex = 20;
-        toggleBtn.onclick = () => {
-        t.iframeVisible = !t.iframeVisible;
-        saveTasks();
-        drawBoard();
-        };
-        overlayContainer.appendChild(toggleBtn);
+        if (t.content.trim().startsWith("<iframe")) {
+            const toggleBtn = document.createElement("button");
+            toggleBtn.innerText = t.iframeVisible ? "❌" : "🟢";
+            toggleBtn.style.position = "absolute";
+            toggleBtn.style.left = `${t.x + 10}px`;
+            toggleBtn.style.top = `${t.y + 50}px`;
+            toggleBtn.style.zIndex = 20;
+            toggleBtn.onclick = () => {
+            t.iframeVisible = !t.iframeVisible;
+            saveTasks();
+            drawBoard();
+            };
+            overlayContainer.appendChild(toggleBtn);
 
-        if (t.iframeVisible) {
-        const div = document.createElement("div");
-        div.style.position = "absolute";
-        div.style.left = "50%";
-        div.style.top  = "50%";
-        div.style.width = "90vw";
-        div.style.height = "90vh";
-        div.style.pointerEvents = "auto";
-        div.innerHTML = t.content;
-        overlayContainer.appendChild(div);
+            if (t.iframeVisible) {
+                const div = document.createElement("div");
+                div.style.position = "absolute";
+                div.style.left = "50%";
+                div.style.top  = "50%";
+                div.style.width = "90vw";
+                div.style.height = "90vh";
+                div.style.pointerEvents = "auto";
+                div.innerHTML = t.content;
+                overlayContainer.appendChild(div);
+            }
         }
-    }
     }
     buffer.restore();
 }
@@ -562,35 +553,35 @@ canvas.addEventListener("mousedown", e => {
     const centerX = camera.x + viewport.clientWidth / 2;
     const centerY = camera.y + viewport.clientHeight / 2;
     if (x>=addBtnX && x<=addBtnX+40 && y>=addBtnY && y<=addBtnY+40) {// 任務面板新增任務
-    const nt = { id:Date.now(), title:"", content:"", x: centerX - 110, y: centerY - 40, iframeVisible: false };
-    tasks.push(nt); saveTasks();
-    selectedTaskId = nt.id;
-    titleInput.value=""; contentTextarea.value="";
-    editor.style.display="flex";
-    drawBoard(); return;
+        const nt = { id:Date.now(), title:"", content:"", x: centerX - 110, y: centerY - 40, iframeVisible: false };
+        tasks.push(nt); saveTasks();
+        selectedTaskId = nt.id;
+        titleInput.value=""; contentTextarea.value="";
+        editor.style.display="flex";
+        drawBoard(); return;
     }
     if (x >= closeBtnX &&x <= closeBtnX + 40 &&y >= closeBtnY &&y <= closeBtnY + 40) {// 關閉任務面板
-    boardVisible = false;
-    const overlay = document.getElementById("taskOverlays");
-    overlay.innerHTML = "";
-    main_loop(lastTime);
-    return;
-    }
-    for (let t of tasks) {
-    if (x>=t.x && x<=t.x+220 && y>=t.y && y<=t.y+80) {
-        selectedTaskId = t.id;
-        dragOffset.x = x - t.x;
-        dragOffset.y = y - t.y;
-        draggingTask = t;
+        boardVisible = false;
+        const overlay = document.getElementById("taskOverlays");
+        overlay.innerHTML = "";
+        main_loop(lastTime);
         return;
     }
+    for (let t of tasks) {
+        if (x>=t.x && x<=t.x+220 && y>=t.y && y<=t.y+80) {
+            selectedTaskId = t.id;
+            dragOffset.x = x - t.x;
+            dragOffset.y = y - t.y;
+            draggingTask = t;
+            return;
+        }
     }
 });
 canvas.addEventListener("mousemove", e => {
     if (boardVisible && draggingTask) {
-    draggingTask.x = e.offsetX - dragOffset.x;
-    draggingTask.y = e.offsetY - dragOffset.y;
-    drawBoard();
+        draggingTask.x = e.offsetX - dragOffset.x;
+        draggingTask.y = e.offsetY - dragOffset.y;
+        drawBoard();
     }
 });
 canvas.addEventListener("mouseup", () => {
@@ -601,23 +592,23 @@ canvas.addEventListener("dblclick", e => {
     if (!boardVisible) return;
     const x=e.offsetX, y=e.offsetY;
     for (let t of tasks) {
-    if (x>=t.x && x<=t.x+220 && y>=t.y && y<=t.y+80) {
-        selectedTaskId = t.id;
-        titleInput.value   = t.title;
-        contentTextarea.value = t.content;
-        editor.style.display  = "flex";
-        return;
-    }
+        if (x>=t.x && x<=t.x+220 && y>=t.y && y<=t.y+80) {
+            selectedTaskId = t.id;
+            titleInput.value   = t.title;
+            contentTextarea.value = t.content;
+            editor.style.display  = "flex";
+            return;
+        }
     }
 });
 saveBtn.onclick = () => {
     const t = tasks.find(x => x.id === selectedTaskId);
     if (t) {
-    t.title   = titleInput.value.trim();
-    t.content = contentTextarea.value.trim();
-    saveTasks();
-    editor.style.display = "none";
-    if (boardVisible) drawBoard();
+        t.title   = titleInput.value.trim();
+        t.content = contentTextarea.value.trim();
+        saveTasks();
+        editor.style.display = "none";
+        if (boardVisible) drawBoard();
     }
 };
 deleteBtn.onclick = () => {
@@ -632,13 +623,14 @@ cancelBtn.onclick = () => {
 };
 
 
-// 方向快捷鍵
-let control_right=false, control_left=false, control_up=false;  // 控制變數
+// 方向&互動快捷鍵
+let control_right=false, control_left=false, control_up=false, jPressed = false;;  // 控制變數
 function keyboard_mod(type, value) {
     addEventListener(type, e => {
     if (e.code==='KeyD') control_right = value;
     else if (e.code==='KeyA') control_left  = value;
     else if (e.code==='KeyW') control_up    = value;
+    if (e.code === "KeyJ") jPressed = value;
     });
 }
 keyboard_mod('keydown', true);
@@ -646,13 +638,13 @@ keyboard_mod('keyup',   false);
 
 function control(role) {
     if (control_right) {
-    role.x += 1.5; role.flip = false; role.animation.setState("run");
+        role.x += 1.5; role.flip = false; role.animation.setState("run");
     }
     else if (control_left) {
-    role.x -= 1.5; role.flip = true;  role.animation.setState("run");
+        role.x -= 1.5; role.flip = true;  role.animation.setState("run");
     }
     else if (!role.onGround) {
-    role.animation.setState("jump");
+        role.animation.setState("jump");
     }
     else role.animation.setState("idle");
     if (control_up && role.onGround) role.gravity = -8;
@@ -661,18 +653,18 @@ function control(role) {
 // 功能快捷鍵
 addEventListener('keydown', e => {
     if (e.code === 'KeyK') {
-    if (editor.style.display === "flex") return;
-    boardVisible = !boardVisible;
-    const overlay = document.getElementById("taskOverlays");
-    if (boardVisible) drawBoard();
-    else {
-        overlay.innerHTML = "";
-        main_loop(lastTime);
-    }
+        if (editor.style.display === "flex") return;
+        boardVisible = !boardVisible;
+        const overlay = document.getElementById("taskOverlays");
+        if (boardVisible) drawBoard();
+        else {
+            overlay.innerHTML = "";
+            main_loop(lastTime);
+        }
     }
     if (e.code === 'KeyP') {
-    game_switch = !game_switch;
-    if (game_switch && !boardVisible) main_loop(lastTime);
+        game_switch = !game_switch;
+        if (game_switch && !boardVisible) main_loop(lastTime);
     }
     if (e.code === 'KeyH') debug_switch = !debug_switch;
     if (e.code === 'ArrowUp') saveGame();
@@ -723,9 +715,9 @@ function main_loop(timestamp) {
 
     for (let layer of tileLayers) drawTileLayer(layer);
     if (debug_switch) {
-    drawCollisionBoxes(collisionBoxes);
-    user.hitbox(0.5, ENTITY_SCALE);
-    npc.hitbox(1.0, ENTITY_SCALE);
+        drawCollisionBoxes(collisionBoxes);
+        user.hitbox(0.5, ENTITY_SCALE);
+        npc.hitbox(1.0, ENTITY_SCALE);
     }
     user.drawSprite(ENTITY_SCALE);
     npc.drawSprite(ENTITY_SCALE);
