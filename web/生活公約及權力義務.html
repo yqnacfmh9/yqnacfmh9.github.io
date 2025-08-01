@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>生活公約1.0.1</title>
+    <title>生活公約1.0.2</title>
     <style>
         body {
             font-family: "標楷體";
@@ -19,6 +19,10 @@
         }
         ol ,p{
             padding-left: 20px;
+            font-size: 18px;
+        }
+        input{
+            font-family: "標楷體";
             font-size: 18px;
         }
         .section{
@@ -44,7 +48,6 @@
     </style>
 </head>
 <body>
-    <button class="print-button" onclick="window.print()">列印</button>
     <h1>新北市私立豐禾老人長期照顧中心(養護型)</h1>
     <h2>住民(家屬)生活公約及權利與義務</h2>
     <p style="text-align:right;">103年10月制定<br><span class="revision-year"></span>年01月修訂</p>
@@ -109,10 +112,11 @@
     </div>
 
     <div class="section">
-        <p>住 民 姓 名：</p>
+        <p>住 民 姓 名：<input type="text" style="border: none;"/></p>
         <p>家 屬 簽 名：</p>
         <p>日 期： <span class="revision-year"></span> 年 <span class="revision-month"></span> 月 <span class="revision-day"></span> 日</p>
     </div>
+    <button class="print-button" onclick="window.print()">列印</button>
     <script>
         const currentYear = new Date().getFullYear();
         document.querySelectorAll('.revision-year').forEach(element => {
