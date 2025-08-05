@@ -573,7 +573,7 @@ function drawBoard() {
             const toggleBtn = document.createElement("button");
             toggleBtn.innerText = t.iframeVisible ? "❌" : "🟢";
             toggleBtn.style.position = "absolute";
-            toggleBtn.style.left = `${t.x + 10}px`;
+            toggleBtn.style.left = `${t.x + 180}px`;
             toggleBtn.style.top = `${t.y + 50}px`;
             toggleBtn.style.zIndex = 20;
             toggleBtn.onclick = () => {
