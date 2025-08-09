@@ -604,8 +604,8 @@ class Entity {
         buffer.textAlign = 'left';
         buffer.fillText(`Lv.${this.level}`, x, y - 10);
         buffer.fillText(`💰${this.coins}`, x, y + 14);
-        buffer.fillText(`⏱️${this.lifespan}/${this.maxLifespan}`, x + barWidth / 2, lifespanY + 12 );// 壽命文字
-        buffer.fillText(`❤️${this.health}/${this.maxHealth}`, x + barWidth / 2, y + 12 );    // 血量文字
+        buffer.fillText(`${this.lifespan}/${this.maxLifespan}`, x + barWidth / 2, lifespanY + 12 );// 壽命文字
+        buffer.fillText(`${this.health}/${this.maxHealth}`, x + barWidth / 2, y + 12 );    // 血量文字
         
         // 經驗值條
         const expPercent = this.experience / this.expToNextLevel;
