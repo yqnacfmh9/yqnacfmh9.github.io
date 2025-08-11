@@ -541,7 +541,7 @@ class Entity {
         this.health = this.maxHealth; // 升級時恢復滿血
         
         // 增加壽命
-        const lifespanBonus = 100;
+        const lifespanBonus = 50;
         this.maxLifespan += lifespanBonus;
         this.lifespan += lifespanBonus;
         
@@ -716,6 +716,8 @@ const contentTextarea = document.getElementById("taskContent");
 const saveBtn         = document.getElementById("saveTask");
 const deleteBtn       = document.getElementById("deleteTask");
 const cancelBtn       = document.getElementById("cancelEdit");
+const completeBtn = document.getElementById("completeTask");
+
 
 function saveTasks() {
     localStorage.setItem("canvasTasks", JSON.stringify(tasks));
@@ -785,20 +787,7 @@ function drawBoard() {
         buffer.font = "bold 18px sans-serif";
         buffer.textAlign = "center";
         wrapTextCentered(t.title || "(無標題)", t.x+110, t.y+25, 200, 22);
-        const completeBtn = document.createElement("button");//完成按鈕
-        completeBtn.innerText = "✅";
-        completeBtn.style.position = "absolute";
-        completeBtn.style.left = `${t.x + 140}px`;
-        completeBtn.style.top = `${t.y + 50}px`;
-        completeBtn.style.zIndex = 20;
-        completeBtn.onclick = () => {
-            tasks = tasks.filter(x => x.id !== t.id);
-            user.addExperience(25);
-            user.addCoins(1);
-            saveTasks();
-            drawBoard();
-        };
-        overlayContainer.appendChild(completeBtn);
+        
 
         if (t.content.trim().startsWith("<iframe")) {
             const toggleBtn = document.createElement("button");
@@ -905,6 +894,19 @@ cancelBtn.onclick = () => {
     editor.style.display = "none";
     if (boardVisible) drawBoard();
 };
+
+completeBtn.onclick = () => {
+  const t = tasks.find(x => x.id === selectedTaskId);
+  if (t) {
+    tasks = tasks.filter(x => x.id !== t.id);
+    user.addExperience(25);
+    user.addCoins(1);
+    saveTasks();
+    editor.style.display = "none";
+    if (boardVisible) drawBoard();
+  }
+};
+
 
 
 // 方向&互動快捷鍵
