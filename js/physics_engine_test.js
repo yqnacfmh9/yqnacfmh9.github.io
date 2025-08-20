@@ -560,8 +560,8 @@ class Entity {
             buffer.save();
             buffer.fillStyle = 'rgba(0,0,0,0.7)';
             buffer.fillRect(
-                this.x * RENDER_SCALE - camera.x - 10,
-                this.y * RENDER_SCALE - camera.y - 40,
+                this.x * RENDER_SCALE - 10,
+                this.y * RENDER_SCALE - 40,
                 this.width * RENDER_SCALE * ENTITY_SCALE + 20,
                 30
             );
@@ -571,8 +571,8 @@ class Entity {
             const respawnTime = Math.ceil((this.respawnTime - this.deathTimer) / 1000);
             buffer.fillText(
                 `死亡 - 復活倒計時: ${respawnTime}s`,
-                (this.x + this.width * ENTITY_SCALE / 2) * RENDER_SCALE - camera.x,
-                this.y * RENDER_SCALE - camera.y - 20
+                (this.x + this.width * ENTITY_SCALE / 2) * RENDER_SCALE ,
+                this.y * RENDER_SCALE - 20
             );
             buffer.restore();
             return;
