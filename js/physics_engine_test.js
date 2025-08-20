@@ -962,7 +962,7 @@ const shop = {
     {
       id: "longevity",
       name: "延壽丹",
-      price: 10,
+      price: 6,
       stock: 3,
       // 效果：回復 50 壽命（不超過最大）
       use: () => {
@@ -1206,4 +1206,5 @@ function main_loop(timestamp) {
 
 // 啟動
 resizeCanvas();
+
 requestAnimationFrame(main_loop);
