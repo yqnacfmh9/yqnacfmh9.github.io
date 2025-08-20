@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>物理引擎 x 任務系統 v1.7.11</title>
+  <title>物理引擎 x 任務系統 v1.7.12</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin: 0; overflow: hidden; background: #eef; }
@@ -96,6 +96,9 @@
       background: #fff; border-radius: 12px; padding: 16px 16px 8px;
       box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
+    button.buy,button#shopClose,#shop .panel {
+      font-size: 24px;
+    }
     #shop h2 { margin: 0 0 12px; }
     #shop .items { display: grid; grid-template-columns: 1fr; gap: 10px; }
     #shop .item {
@@ -108,6 +111,14 @@
     #shop .stock { color: #64748b; }  /* 次要文字 */
     #shop .actions { display: flex; gap: 8px; }
     #shop button.buy { padding: 6px 10px; }
+    .panel {
+      position: relative;
+    }
+    #shopClose {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+    }
     #shop .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
   </style>
 </head>
@@ -134,7 +145,7 @@
         <div class="footer">
           <div id="shopCoins">💰：<span>0</span></div>
           <div class="actions">
-            <button id="shopClose">關閉</button>
+            <button id="shopClose">❌</button>
           </div>
         </div>
       </div>
