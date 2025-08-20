@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>物理引擎 x 任務系統 v1.7.10</title>
+  <title>物理引擎 x 任務系統 v1.7.11</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     html, body { margin: 0; overflow: hidden; background: #eef; }
@@ -83,6 +83,32 @@
     #editor button {
       margin-right: 10px;
     }
+
+    /* 商店系統 */
+    #shop {
+      position: fixed; inset: 0;
+      display: none; /* 由 JS 切換為 flex */
+      align-items: center; justify-content: center;
+      background: rgba(0,0,0,.45); z-index: 60;
+    }
+    #shop .panel {
+      width: 520px; max-width: 92vw;
+      background: #fff; border-radius: 12px; padding: 16px 16px 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    #shop h2 { margin: 0 0 12px; }
+    #shop .items { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    #shop .item {
+      display: flex; align-items: center; justify-content: space-between;
+      border: 1px solid #ddd; border-radius: 8px; padding: 10px 12px;
+    }
+    #shop .meta { display: flex; flex-direction: column; gap: 2px; }
+    #shop .name { font-weight: 700; }
+    #shop .price { color: #f59e0b; }  /* 金色 */
+    #shop .stock { color: #64748b; }  /* 次要文字 */
+    #shop .actions { display: flex; gap: 8px; }
+    #shop button.buy { padding: 6px 10px; }
+    #shop .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
   </style>
 </head>
 <body>
@@ -99,6 +125,18 @@
         <button id="completeTask">完成</button>
         <button id="deleteTask">刪除</button>
         <button id="cancelEdit">取消</button>
+      </div>
+    </div>
+    <div id="shop" aria-hidden="true">
+      <div class="panel">
+        <h2>雜貨店</h2>
+        <div class="items" id="shopList"></div>
+        <div class="footer">
+          <div id="shopCoins">💰：<span>0</span></div>
+          <div class="actions">
+            <button id="shopClose">關閉</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
