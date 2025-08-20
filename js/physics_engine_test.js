@@ -239,7 +239,9 @@ triggerInteraction(27, () => {
   document.body.removeChild(input);
 });
 
-
+triggerInteraction(28, () => {
+    toggleShop(); 
+});
 
 
 //動畫類別
@@ -654,23 +656,47 @@ function updateCamera(target) {
 
 
 // --- 儲存 / 載入遊戲 ---
+
 function saveGame() {
-    const states = allEntities.map(e => e.save());
-    localStorage.setItem('gameSave', JSON.stringify({ entities: states }));
+  const states = allEntities.map(e => e.save());
+  const shopState = getShopState();
+  localStorage.setItem('gameSave', JSON.stringify({
+    entities: states,
+    shop: shopState
+  }));
 }
+
+
 function loadGame() {
-    const data = JSON.parse(localStorage.getItem('gameSave'));
-    if (!data || !Array.isArray(data.entities)) return;
+  const data = JSON.parse(localStorage.getItem('gameSave'));
+  if (!data) return;
+
+  // 載入角色/實體
+  if (Array.isArray(data.entities)) {
     for (let s of data.entities) {
-    const e = allEntities.find(x => x.name === s.name);
-    if (e) e.load(s);
+      const e = allEntities.find(x => x.name === s.name);
+      if (e) e.load(s);
     }
+  }
+
+  // 套用商店庫存
+  if (Array.isArray(data.shop)) {
+    applyShopState(data.shop);
+    if (shopVisible) renderShop();
+  }
 }
+
 // 匯出所有資料
 function exportAllData() {
+  const currentGameSave = JSON.parse(localStorage.getItem('gameSave') || '{}');
+  if (!currentGameSave.shop) {
+    currentGameSave.entities ??= allEntities.map(e => e.save());
+    currentGameSave.shop = getShopState();
+  }
+
   const data = {
     canvasTasks: tasks,
-    gameSave: JSON.parse(localStorage.getItem('gameSave') || '{}')
+    gameSave: currentGameSave
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -680,20 +706,25 @@ function exportAllData() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
 // 匯入所有資料
 function importAllData(file) {
   const reader = new FileReader();
   reader.onload = function (e) {
     try {
       const data = JSON.parse(e.target.result);
+
       if (data.canvasTasks && Array.isArray(data.canvasTasks)) {
         tasks = data.canvasTasks;
         saveTasks();
       }
-      if (data.gameSave && Array.isArray(data.gameSave.entities)) {
+
+      if (data.gameSave && (Array.isArray(data.gameSave.entities) || Array.isArray(data.gameSave.shop))) {
         localStorage.setItem('gameSave', JSON.stringify(data.gameSave));
         loadGame();
+        if (shopVisible) renderShop();
       }
+
       alert("資料匯入成功！");
     } catch (err) {
       alert("匯入失敗：格式錯誤或解析錯誤");
@@ -701,6 +732,7 @@ function importAllData(file) {
   };
   reader.readAsText(file);
 }
+
 
 
 
@@ -907,6 +939,146 @@ completeBtn.onclick = () => {
   }
 };
 
+//商店系統
+let shopVisible = false;
+
+// 取得商店 DOM
+const shopEl = document.getElementById("shop");
+const shopListEl = document.getElementById("shopList");
+const shopCoinsEl = document.querySelector("#shopCoins span");
+const shopCloseBtn = document.getElementById("shopClose");
+
+// 商店初始資料（可依需求調價/調存貨）
+const shop = {
+  items: [
+    {
+      id: "potion",
+      name: "治療藥水",
+      price: 3,
+      stock: 5,
+      // 效果：回復 35 點血量（不超過最大值）
+      use: () => user.heal(35)
+    },
+    {
+      id: "longevity",
+      name: "延壽丹",
+      price: 10,
+      stock: 3,
+      // 效果：回復 50 壽命（不超過最大）
+      use: () => {
+        if (user.isDead) return; // 死亡中不生效
+        user.lifespan = Math.min(user.maxLifespan, user.lifespan + 50);
+      }
+    },
+    {
+      id: "RestTime",
+      name: "休息時間30分鐘",
+      price: 3,
+      stock: 10,
+      use: () => console.log("可休息30分鐘")
+    },
+  ]
+};
+
+// 渲染商店清單
+function renderShop() {
+  shopListEl.innerHTML = "";
+  shopCoinsEl.textContent = String(user.coins);
+
+  for (const item of shop.items) {
+    const row = document.createElement("div");
+    row.className = "item";
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = item.name;
+
+    const price = document.createElement("div");
+    price.className = "price";
+    price.textContent = `價格：${item.price} 💰`;
+
+    const stock = document.createElement("div");
+    stock.className = "stock";
+    stock.textContent = `存貨：${item.stock}`;
+
+    meta.appendChild(name);
+    meta.appendChild(price);
+    meta.appendChild(stock);
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const btn = document.createElement("button");
+    btn.className = "buy";
+    btn.textContent = "購買";
+    btn.disabled = item.stock <= 0;
+
+    btn.onclick = () => {
+      if (user.isDead) {
+        alert("你已死亡，無法購買。");
+        return;
+      }
+      if (item.stock <= 0) {
+        alert("此商品已售罄。");
+        return;
+      }
+      if (user.coins < item.price) {
+        alert("金幣不足。");
+        return;
+      }
+      // 扣錢、扣庫存、套用效果
+      user.coins -= item.price;
+      item.stock -= 1;
+      try { item.use(); } catch (e) { console.error(e); }
+      // 更新 UI 與存檔
+      renderShop();
+      // 可選：立即重繪一次狀態條（若 H 除錯時可見）
+      // user.drawStatusBar();
+    };
+
+    actions.appendChild(btn);
+
+    row.appendChild(meta);
+    row.appendChild(actions);
+    shopListEl.appendChild(row);
+  }
+}
+
+// 開關商店
+function toggleShop(force) {
+
+  if (typeof force === "boolean") shopVisible = force;
+  else shopVisible = !shopVisible;
+
+  if (shopVisible) {
+    renderShop();
+    shopEl.style.display = "flex";
+    shopEl.setAttribute("aria-hidden", "false");
+  } else {
+    shopEl.style.display = "none";
+    shopEl.setAttribute("aria-hidden", "true");
+  }
+}
+
+shopCloseBtn.onclick = () => toggleShop(false);// 關閉商店按鈕
+
+
+function getShopState() {
+  return shop.items.map(({ id, stock }) => ({ id, stock }));
+}
+
+function applyShopState(state) {
+  if (!Array.isArray(state)) return;
+  const map = new Map(state.map(s => [s.id, s]));
+  for (const item of shop.items) {
+    const saved = map.get(item.id);
+    if (saved) {
+      if (typeof saved.stock === 'number') item.stock = saved.stock;
+    }
+  }
+}
+
 
 
 // 方向&互動快捷鍵
@@ -963,7 +1135,7 @@ addEventListener('keydown', e => {
     if (e.code === 'KeyR') user.addCoins(10); // R鍵獲得金幣
     if (e.code === 'KeyT') user.addExperience(25); // T鍵獲得經驗值
     if (e.code === 'KeyF') { // F鍵快速耗盡壽命（測試用）
-        user.lifespan = user.lifespan - 30000;
+        user.lifespan = user.lifespan - 99;
     }
 });
 
@@ -983,7 +1155,8 @@ function main_loop(timestamp) {
     lastTime = timestamp;
 
     if (!game_switch) return;
-    if (boardVisible) return drawBoard();
+    if (boardVisible) return drawBoard();// 任務面板開啟時暫停更新/繪製
+
 
     requestAnimationFrame(main_loop);
 
