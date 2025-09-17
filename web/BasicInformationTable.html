@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>個案資料輸入與匯出 v0.1.10</title>
+  <title>個案資料輸入與匯出 v0.2.0</title>
   <!-- 表單樣式 -->
   <style id="formStyles">
     body, html {
@@ -92,6 +92,13 @@
     #downloadBtn {
       display: block;
       margin: 20px auto 0;
+    }
+    .top-controls {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:12px;
     }
   </style>
 
@@ -194,8 +201,14 @@
 </head>
 <body>
 
+  <div class="top-controls">
+    <!-- 新增：匯入匯出檔案（載入匯出 HTML 並回填表單） -->
+    <input type="file" id="importFileInput" accept=".html,text/html" />
+    <button type="button" id="importBtn">載入匯出檔並回填表單</button>
+  </div>
+
   <form id="caseForm">
-    <select name="facility">
+    <select name="facility" id="facilitySelect">
       <option>新北市私立豐禾老人長期照顧中心(養護型)</option>
       <option>新北市私立靜園老人長期照顧中心(養護型)</option>
     </select>
@@ -303,7 +316,7 @@
           <option>大學以上</option>
           <option>不識字</option>
         </select>
-        <label>過去主要職業</label><input type="text" name="pastJob" />
+        <label>過去職業</label><input type="text" name="pastJob" />
         <label>申請服務原因</label>
         <select name="serviceReason">
           <option>親人無力照顧</option>
@@ -381,7 +394,6 @@
 
     <button type="button" id="downloadBtn">生成表單</button>
     <a href="./生活公約及權力義務.html">生活公約</a>
-    <a href="https://ltcpap.mohw.gov.tw/molc/auth/login" target="_blank">長照人員資訊管理系統</a>
   </form>
 
   <!-- 緊急聯絡人範本 -->
@@ -402,15 +414,25 @@
     let familyTreeDataUrl = '';
 
     // 新增／移除緊急聯絡人
-    document.getElementById('addContactBtn').addEventListener('click', () => {
+    function addContact(fields = {}) {
       const tpl = document.getElementById('contactTpl').content.cloneNode(true);
-      tpl.querySelector('.remove-btn').addEventListener('click', e => {
+      const removeBtn = tpl.querySelector('.remove-btn');
+      removeBtn.addEventListener('click', e => {
         e.target.closest('.contact').remove();
       });
-      document.getElementById('contacts-container').appendChild(tpl);
-    });
+      // 填入預設值（若有）
+      if (fields.name) tpl.querySelector('input[name="contactName[]"]').value = fields.name;
+      if (fields.rel)  tpl.querySelector('input[name="contactRelation[]"]').value = fields.rel;
+      if (fields.tel)  tpl.querySelector('input[name="contactTel[]"]').value = fields.tel;
+      if (fields.mob)  tpl.querySelector('input[name="contactMobile[]"]').value = fields.mob;
+      if (fields.addr) tpl.querySelector('input[name="contactAddress[]"]').value = fields.addr;
 
-    // 家系圖預覽
+      document.getElementById('contacts-container').appendChild(tpl);
+    }
+
+    document.getElementById('addContactBtn').addEventListener('click', () => addContact());
+
+    // 家系圖預覽（上傳）
     document.getElementById('familyTreeInput').addEventListener('change', function () {
       const file = this.files[0];
       if (!file) return;
@@ -519,9 +541,6 @@
         mob:   mobs[i]   || '',
         addr:  addrs[i]  || ''
       }));
-      const contactItems = contacts.flatMap(c =>
-        Object.entries(c).map(([k, v]) => ({ label: k, value: v }))
-      );
 
       // 各區塊欄位資料
       const basics = [
@@ -610,11 +629,187 @@
       const blob = new Blob([finalHtml], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
+      const safeTitle = (document.getElementById('formTitle').value || '住民基本資料表').replace(/\s+/g, "_");
       a.href = url;
-      a.download = `${document.getElementById('formTitle').value.replace(/\s+/g, "_")}.html`;
+      a.download = `${safeTitle}.html`;
       a.click();
       URL.revokeObjectURL(url);
     });
+
+    // ============================
+    // 匯入功能：載入匯出檔並回填表單
+    // ============================
+    document.getElementById('importBtn').addEventListener('click', () => {
+      const fileInput = document.getElementById('importFileInput');
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) {
+        alert('請先選擇匯出的 HTML 檔案（由「生成表單」下載）。');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          parseExportHtml(e.target.result);
+          alert('已從匯出檔回填表單（如有家系圖會顯示）。');
+        } catch (err) {
+          console.error(err);
+          alert('解析匯出檔時發生錯誤，請確認檔案是由本系統「生成表單」匯出的 HTML。');
+        }
+      };
+      reader.readAsText(f, 'utf-8');
+    });
+
+    // 解析匯出 HTML 並回填表單
+    function parseExportHtml(htmlText) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, 'text/html');
+
+      // 1) 優先取第一個 h1 作為 facility（匯出時第一個 h1 存放機構名稱）
+      const h1s = doc.querySelectorAll('h1');
+      if (h1s && h1s.length > 0) {
+        const facility = h1s[0].textContent.trim();
+        setSelectOrCreate(document.querySelector('select[name="facility"]'), facility);
+      }
+
+      // 2) 收集所有 .field（label / value）對
+      const fields = {};
+      const fieldNodes = doc.querySelectorAll('.field');
+      fieldNodes.forEach(f => {
+        const lblEl = f.querySelector('.label');
+        const valEl = f.querySelector('.value');
+        if (!lblEl || !valEl) return;
+        let label = lblEl.textContent.replace(/：/g, '').trim();
+        let value = valEl.textContent.trim();
+        fields[label] = value;
+      });
+
+      // 3) mapping：將輸出 label 對應回表單 name
+      const labelToName = {
+        '姓名':'name','性別':'gender','體檢醫院':'hospital','入住日期':'checkinDate',
+        '出生日期':'dob','身分證':'idNo','戶籍地址':'address','身份別':'socialId',
+        '保險種類':'insuranceType','經濟來源':'incomeSource','身障證明':'disabilityProof',
+        '認知狀態':'cognition','輔具使用':'assistiveDevices','管路':'tubes','表達能力':'expression',
+        '飲食形態':'diet','入住意願':'admission','評估摘要':'evalSummary',
+        '教育程度':'education','過去職業':'pastJob','入住原因':'serviceReason','居住情形':'livingSituation',
+        '婚姻狀況':'maritalStatus','生活作息':'dailyRoutine','照顧者':'mainCarer','決策者':'mainDecisionMaker',
+        '宗教信仰':'religion','家庭關係':'familyRelation','個案來源':'caseSource','退住日期':'checkoutDate',
+        '助力':'strengths','阻力':'barriers','主管':'supervisor','填表者':'filler'
+      };
+
+      // 填入欄位（文字 / select / textarea / date）
+      Object.entries(labelToName).forEach(([label, name]) => {
+        if (!(label in fields)) return;
+        const val = fields[label];
+        const el = document.querySelector(`[name="${name}"]`);
+        if (!el) {
+          // 若無對應欄位（例如 supervisor / filler），忽略或可以擴充處理
+          return;
+        }
+        if (el.tagName === 'INPUT') {
+          // date 或 text
+          // 如果是 date 輸入，嘗試解析成 yyyy-mm-dd（匯出通常是原值）
+          if (el.type === 'date') {
+            // 如果匯出的格式為 yyyy-mm-dd，直接填入；否則嘗試轉換
+            const iso = parseToISODate(val);
+            if (iso) el.value = iso;
+            else el.value = val;
+          } else {
+            el.value = val;
+          }
+        } else if (el.tagName === 'SELECT') {
+          setSelectOrCreate(el, val);
+        } else if (el.tagName === 'TEXTAREA') {
+          el.value = val;
+        }
+      });
+
+      // 4) 緊急聯絡人：尋找 .contact-grid 並解析 .cell（header 後為資料）
+      const contactGrid = doc.querySelector('.contact-grid');
+      if (contactGrid) {
+        // 清除現有 contact
+        document.getElementById('contacts-container').innerHTML = '';
+        const cells = Array.from(contactGrid.querySelectorAll('.cell'));
+        // cells 按 5 個一組：姓名、關係、市內電話、手機、住址
+        for (let i = 0; i < cells.length; i += 5) {
+          const name = (cells[i]   && cells[i].textContent.trim()) || '';
+          const rel  = (cells[i+1] && cells[i+1].textContent.trim()) || '';
+          const tel  = (cells[i+2] && cells[i+2].textContent.trim()) || '';
+          const mob  = (cells[i+3] && cells[i+3].textContent.trim()) || '';
+          const addr = (cells[i+4] && cells[i+4].textContent.trim()) || '';
+          addContact({ name, rel, tel, mob, addr });
+        }
+      }
+
+      // 5) 家系圖：找 .family-tree-img 的 src
+      const img = doc.querySelector('.family-tree-img');
+      if (img && img.src) {
+        familyTreeDataUrl = img.src;
+        document.getElementById('familyTreePreview').src = familyTreeDataUrl;
+      }
+
+      // 6) 助力 / 阻力：若 export 使用 two-col-output 結構
+      const twoColSec = Array.from(doc.querySelectorAll('.section-block')).find(sec => {
+        const h = sec.querySelector('h2');
+        return h && h.textContent.trim().startsWith('七、助力及阻力');
+      });
+      if (twoColSec) {
+        const cols = twoColSec.querySelectorAll('.col');
+        if (cols.length >= 2) {
+          const leftLabel = cols[0].querySelector('.label')?.textContent.replace(/：/g,'').trim();
+          const leftVal   = cols[0].querySelector('.value')?.textContent.trim();
+          const rightLabel= cols[1].querySelector('.label')?.textContent.replace(/：/g,'').trim();
+          const rightVal  = cols[1].querySelector('.value')?.textContent.trim();
+          if (leftLabel === '助力') { document.querySelector('textarea[name="strengths"]').value = leftVal || ''; }
+          if (rightLabel === '阻力') { document.querySelector('textarea[name="barriers"]').value = rightVal || ''; }
+        }
+      }
+
+      // 7) 如果 export 有顯示表頭 title，嘗試從檔案名或 h1 第二個取 title
+      if (h1s && h1s.length > 1) {
+        // 第二個 h1 可能是表單標題或固定文字，忽略
+      }
+      // 嘗試從 export 的 <title> 或 body h1 取得預設檔名 / 標題
+      const titleTag = doc.querySelector('title');
+      if (titleTag && titleTag.textContent) {
+        document.getElementById('formTitle').value = titleTag.textContent.trim();
+      } else if (h1s && h1s.length > 1) {
+        document.getElementById('formTitle').value = h1s[1].textContent.trim();
+      }
+    }
+
+    // 協助：將任一字串設定為 select 的 value，若 option 不存在則建立一個 option 並設定
+    function setSelectOrCreate(selectEl, value) {
+      if (!selectEl) return;
+      const opts = Array.from(selectEl.options || []);
+      const match = opts.find(o => o.textContent.trim() === value || o.value === value);
+      if (match) {
+        selectEl.value = match.value;
+      } else {
+        // 建立新 option 並選取
+        const opt = document.createElement('option');
+        opt.textContent = value;
+        opt.value = value;
+        selectEl.appendChild(opt);
+        selectEl.value = value;
+      }
+    }
+
+    // 協助：嘗試將各式日期字串轉為 yyyy-mm-dd（簡單實作）
+    function parseToISODate(s) {
+      if (!s) return '';
+      s = s.trim();
+      // 已經是 yyyy-mm-dd
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+      // 常見格式：yyyy/mm/dd 或 yyyy.mm.dd
+      const m = s.match(/^(\d{4})[\/\.\-](\d{1,2})[\/\.\-](\d{1,2})$/);
+      if (m) {
+        const y = m[1], mm = String(m[2]).padStart(2,'0'), dd = String(m[3]).padStart(2,'0');
+        return `${y}-${mm}-${dd}`;
+      }
+      // 其他：回傳原字串（瀏覽器可能無法接受）
+      return s;
+    }
+
   </script>
 </body>
 </html>
