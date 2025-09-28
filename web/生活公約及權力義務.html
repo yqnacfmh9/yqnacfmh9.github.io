@@ -3,7 +3,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>生活公約1.0.2</title>
+    <title>生活公約1.0.3</title>
     <style>
         body {
             font-family: "標楷體";
@@ -33,6 +33,12 @@
             background-color: #4CAF50;
             color: white;
         }
+        select {
+            border: none;
+            appearance: none;
+            font-size: 32px;
+            font-weight: bold;
+        }
         @page {
             size: A4;
             margin: 2mm;
@@ -48,11 +54,15 @@
     </style>
 </head>
 <body>
-    <h1>新北市私立豐禾老人長期照顧中心(養護型)</h1>
+    <center><select name="facility" id="facilitySelect">
+      <option>新北市私立豐禾老人長期照顧中心(養護型)</option>
+      <option>新北市私立靜園老人長期照顧中心(養護型)</option>
+    </select></center>
+    
     <h2>住民(家屬)生活公約及權利與義務</h2>
     <p style="text-align:right;">103年10月制定<br><span class="revision-year"></span>年01月修訂</p>
 
-    <h3>生活公約</h3>
+    <h2>生活公約</h2>
     <p>本中心為維護住民生命財產安全，特制定本生活公約，請共同遵循：</p>
     <ol>
         <li>中心為保護住民及工作人員安全，探訪時：<span class="red">請務必於護理站登記後進入。</span></li>
