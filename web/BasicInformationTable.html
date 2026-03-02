@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>個案資料輸入與匯出 v0.2.1</title>
+  <title>個案資料輸入與匯出 v1.0.0</title>
   <!-- 表單樣式 -->
   <style id="formStyles">
     body, html {
@@ -212,7 +212,7 @@
       <option>新北市私立豐禾老人長期照顧中心(養護型)</option>
       <option>新北市私立靜園老人長期照顧中心(養護型)</option>
     </select>
-    <input type="text" id="formTitle" placeholder="E1路人甲基本資料表" />
+    <input type="text" id="formTitle" name="formTitle" placeholder="E1路人甲基本資料表" />
     <!-- 一、個案基本資料 -->
     <section class="form-section">
       <h2>一、個案基本資料</h2>
@@ -527,6 +527,7 @@
       const formEl = document.getElementById('caseForm');
       const fd = new FormData(formEl);
       const G = key => fd.get(key) || '';
+      const formTitleVal = (G('formTitle') || '住民基本資料表').trim();
 
       // 從 FormData 取得多筆聯絡人欄位
       const names = fd.getAll('contactName[]');
@@ -619,7 +620,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>個案資料報表</title>
+  <title>${formTitleVal}</title>
   <style>${exportCss}</style>
 </head>
 <body>
